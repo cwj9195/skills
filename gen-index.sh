@@ -17,6 +17,8 @@ get_desc() {
       echo "🎨 **元素样式检查** — 查看浏览器中指定元素的 computed style，支持跨页面样式比对，排查 CSS 差异和覆盖问题。";;
     find-skills)
       echo "🔍 **发现新 Skills** — 搜索和安装社区 Skills，当你想知道「有没有某个功能的 Skill」时使用。";;
+    frontend-design-agent)
+      echo "📐 **前端设计书生成系统** — 根据 PRD、MasterGo、原型、现有代码和公司组件库，生成 AI 可落地的前端设计书、Fact Set、任务包和 CI 门禁。";;
     frontend-design-doc-generator)
       echo "📋 **前端设计书生成** — 根据 PRD、原型、UI 设计和代码库，生成 AI 可独立实现的前端实施设计书。";;
     loop)
