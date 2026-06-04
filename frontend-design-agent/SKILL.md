@@ -1,6 +1,6 @@
 ---
 name: frontend-design-agent
-version: '2.0.0'
+version: '2.1.0'
 description: '前端设计书生成系统 v2。Use when: 用户要求根据 PRD、MasterGo 图层、原型、现有代码和公司组件库，生成 AI 可直接写代码的前端设计书和任务包。'
 argument-hint: '[PRD/Spec] [MasterGo链接] [原型/截图] [代码库路径] [组件库路径]'
 ---

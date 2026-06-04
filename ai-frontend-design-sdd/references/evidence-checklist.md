@@ -101,6 +101,18 @@ Evidence: Codegraph symbol `useFoo` callers: A, B, C
 - 已知失败基线
 - 不能执行的原因
 
+## AI 可执行性证据
+
+检查：
+
+- 是否有固定文件链路：`facts.md`、`spec.md`、`code-reference.md`、`frontend-design.md`、`tasks.md`、`claude-code-task.md`、`ci-gate.md`、`agent-prompts.md`、`fact-set.yaml`
+- 是否每个模块都有范围、页面、路由、组件、状态、接口、权限、异常、测试、实现
+- 是否每个任务都有目标、输入证据、输出文件、依赖、验收、停止条件
+- 是否有实现顺序和依赖关系
+- 是否有 Current Evidence Gate 与 Required Engineering Gate
+- 是否有可复制的 Agent Prompt
+- 是否明确不确定项的处理方式
+
 ## Fail-Closed 条件
 
 出现以下情况，不继续编造：

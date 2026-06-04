@@ -1,4 +1,4 @@
 interface:
   display_name: "AI前端设计SDD"
-  short_description: "把产品、设计、原型、代码和组件库证据转成AI可执行前端设计书。"
-  default_prompt: "根据PRD、MasterGo、原型、当前代码和企业组件库，产出遵循SDD的AI可执行前端设计书。"
+  short_description: "把产品、设计、原型、代码和组件库证据转成可校验、分文件、可执行的前端SDD。"
+  default_prompt: "根据PRD、MasterGo、原型、当前代码和企业组件库，产出包含facts/spec/code-reference/frontend-design/tasks/claude-code-task/ci-gate/agent-prompts/fact-set的AI可执行前端设计书。"

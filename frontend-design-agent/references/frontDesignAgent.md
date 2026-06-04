@@ -74,14 +74,19 @@ TaskAgent（→ claude-code-task.md）
 | `fact-set.yaml` | 验收标准合并进 frontend-design.md 各模块验收章节 |
 | `ci-gate.md` | 空壳，等实际写测试时再生成 |
 
-### 2.4 主流程
+### 2.4 主流程（v2.1 完整版）
 
 ```text
 输入材料
 ↓
+⓪ /clarify：苏格拉底式澄清（分段提问，消除歧义）
+   └─ 每模块至少 2 个澄清问题
+   └─ 结论记录到 requirements.md「澄清记录」
+↓
 ① InputCollectorAgent：收集 PRD/MasterGo/原型/代码/组件库
 ↓
-② RequirementStructAgent：PRD → requirements.md
+② RequirementStructAgent：PRD + 澄清记录 → requirements.md
+   └─ 分段呈现，每段 1 个模块
 ↓
 ③ CodeReferenceAgent：Codegraph 提取项目级代码模式 → code-reference.md
    ├─ 列表页工厂（签名+范例）
@@ -102,7 +107,18 @@ TaskAgent（→ claude-code-task.md）
    ├─ P0 模块写完整版（所有代码骨架）
    └─ 其余模块写差异版（只写与完整版的差异）
 ↓
-⑥ TaskAgent：引用 design → claude-code-task.md（代码级完成标准）
+⑥ /analyze：强制自审（模拟实现测试 + 交叉引用检查）
+   └─ 6 项检查，≥ 4/6 通过 → 继续
+   └─ ≤ 3/6 通过 → 回退到 evidence 重新采集
+↓
+⑦ TaskAgent：引用 design → claude-code-task.md
+   ├─ 代码级完成标准（可转 assert）
+   ├─ 任务粒度 2-5 分钟
+   └─ 每个任务含验证步骤
+↓
+⑧ /verify：最终验证（粒度 + 断言 + 依赖 + 回归）
+   └─ 6 项检查全部通过 → done
+   └─ 有检查不通过 → 回退到 task 修正
 ```
 
 ## 3. Agent 设计
@@ -217,7 +233,17 @@ v2 模块结构：
 
 ## 5. Prompt 设计
 
-### 5.1 CodeReferenceAgent 角色约束
+### 5.1 ClarifyAgent 角色约束（v2.1 新增）
+
+```text
+你是需求澄清专家。
+你的任务不是写文档，而是通过苏格拉底式提问消除需求歧义。
+每轮最多 3-5 个问题。分段呈现，等用户回答后再继续。
+问题聚焦：边界条件、异常路径、权限差异、模块交互。
+禁止跳过澄清直接生成文档。
+```
+
+### 5.2 CodeReferenceAgent 角色约束
 
 ```text
 你是代码模式提取专家。
@@ -226,18 +252,46 @@ v2 模块结构：
 禁止编造签名。禁止使用伪代码。所有代码必须来自实际文件。
 ```
 
-### 5.2 DesignDocAgent 角色约束
+### 5.3 DesignDocAgent 角色约束
 
 ```text
 你是前端设计专家。
 你必须先读取 code-reference.md，理解项目怎么写的，然后设计新模块怎么写。
 每个模块必须引用 code-reference 的章节号。
 禁止使用"按 PRD""参考设计稿"等不可执行描述。
+分段呈现：每段 1 个模块，等用户确认后再继续。
 ```
 
-## 6. 质量门禁（v2）
+### 5.4 AnalyzeAgent 角色约束（v2.1 新增）
 
-### 6.1 code-reference.md 门禁
+```text
+你是设计书审查专家。
+你的任务是用 6 项检查验证 design 能否让 AI 直接写代码。
+最关键的一项：只看 code-reference.md + design，你能否写出该模块完整的 index.tsx？
+如果不能，标注缺失信息并要求回补。
+自审结果必须用表格输出，不可用模糊的"基本满足"。
+```
+
+### 5.5 TaskAgent 角色约束
+
+```text
+你是任务分解专家。
+每个任务必须满足：2-5 分钟粒度、≤ 3 个文件、≤ 100 行新代码。
+完成标准必须能转成 assert 伪代码，不可用模糊描述。
+每个任务必须包含验证步骤。
+```
+
+## 6. 质量门禁（v2.1 完整版）
+
+### 6.1 requirements.md 门禁
+
+| 检查项 | 标准 |
+| ------ | ---- |
+| 澄清记录 | 每个模块 ≥ 2 个澄清问题已回答 |
+| 模块覆盖 | 所有 PRD 模块已覆盖 |
+| 验收标准 | 每个模块有 Given/When/Then |
+
+### 6.2 code-reference.md 门禁
 
 | 检查项 | 标准 |
 | ------ | ---- |
@@ -246,7 +300,7 @@ v2 模块结构：
 | 范例真实性 | 每个模式有 ≥ 1 个真实代码范例 |
 | import 路径 | 所有路径 Verified（来自 Codegraph） |
 
-### 6.2 frontend-design.md 门禁
+### 6.3 frontend-design.md 门禁
 
 | 检查项 | 标准 |
 | ------ | ---- |
@@ -255,20 +309,78 @@ v2 模块结构：
 | 代码骨架 | P0 模块有完整可粘贴代码 |
 | DSL 数据 | 有 MasterGo 链接的模块注入了布局数据 |
 
-### 6.3 claude-code-task.md 门禁
+### 6.4 /analyze 自审门禁（v2.1 新增）
+
+| 检查项 | 标准 | 不通过动作 |
+| ------ | ---- | ---------- |
+| 模拟实现 | 只看 code-reference + design 能写出 index.tsx | 回补代码骨架 |
+| 代码粘贴 | "可粘贴"代码语法正确、import 路径存在 | 修正代码 |
+| 完成标准 | 每个任务完成标准能写成 assert | 改写为断言 |
+| 交叉引用 | design 引用的章节号真实存在 | 修正引用 |
+| 缺失模式 | 无模块需要未覆盖的代码模式 | 回补章节 |
+| 粒度检查 | 每个任务 2-5 分钟 | 拆分任务 |
+
+**退出条件**：≥ 4/6 通过 → 继续；≤ 3/6 → 回退 evidence 重新采集
+
+### 6.5 claude-code-task.md 门禁
 
 | 检查项 | 标准 |
 | ------ | ---- |
 | 完成标准 | 每个任务是代码级断言 |
 | API 引用 | 完成标准引用 code-reference 中的 API |
 | 依赖关系 | 任务间依赖正确标注 |
+| 任务粒度 | 每个任务 ≤ 3 文件、≤ 100 行 |
+| 验证步骤 | 每个任务有明确验证步骤 |
+
+### 6.6 /verify 最终验证门禁（v2.1 新增）
+
+| 检查项 | 标准 | 不通过动作 |
+| ------ | ---- | ---------- |
+| 粒度检查 | 2-5 分钟/任务 | 拆分过大的任务 |
+| 精确路径 | 无 TODO 路径 | 补全路径 |
+| 验证步骤 | 每任务有验证步骤 | 补全步骤 |
+| 可断言 | 每标准可转 assert | 改写标准 |
+| 依赖完整 | 前置依赖已定义 | 修正依赖 |
+| 回归覆盖 | 回归清单覆盖已有功能 | 补全清单 |
+
+**退出条件**：6/6 通过 → done；有不通过 → 回退 task 修正
 
 ## 7. 风险与优化
 
-| 风险 | v2 处理方式 |
+| 风险 | v2.1 处理方式 |
 | ---- | ----------- |
 | Codegraph 未初始化 | 提示初始化；降级 Evidence 标记 Fallback |
 | MasterGo DSL 数据过大 | 提取关键结构，生成精简版 |
 | 项目代码模式不统一 | 选最具代表性的实现，标注差异 |
 | 新需求无现有参考 | 标注为"新模式"，给出推荐实现 |
 | design 过度自然语言化 | 强制代码骨架、字段字典表、API 表 |
+| **用户拒绝澄清** | 记录"用户跳过澄清"到 TODO，基于最佳实践推断，标注 Unverified |
+| **自审循环** | 连续 2 轮自审 ≤ 3/6 → 标记阻塞，要求用户介入 |
+| **任务拆分过细** | 如果某模块拆出 > 20 个任务 → 合并同类任务，保持 ≤ 15 |
+| **分段呈现拖慢节奏** | 用户明确说"一次性输出"时跳过分段 |
+
+## 8. 与 Spec Kit / Superpowers 的对照
+
+### 从 Spec Kit 引入
+
+| Spec Kit 能力 | 在本 Skill 中的对应 |
+| ------------- | ------------------- |
+| `/speckit.specify` → spec.md | → requirements.md |
+| `/speckit.clarify` → 追加澄清记录 | → `/clarify` 阶段（苏格拉底式提问） |
+| `/speckit.plan` → plan.md + research.md | → code-reference.md + frontend-design.md |
+| `/speckit.analyze` → 代理审计计划 | → `/analyze` 自审环节（6 项检查） |
+| `/speckit.tasks` → tasks.md（带 `[P]` 并行标记） | → claude-code-task.md（代码级完成标准） |
+| `/speckit.implement` → 按序执行 | → 交给实现 Agent |
+| constitution.md → 项目治理原则 | → requirements.md 第 0 章「公共约定」 |
+
+### 从 Superpowers 引入
+
+| Superpowers 能力 | 在本 Skill 中的对应 |
+| ----------------- | ------------------- |
+| brainstorming skill → 苏格拉底式设计对话 | → `/clarify` 阶段 |
+| writing-plans skill → 计划详细到无上下文也能执行 | → 任务粒度 2-5 分钟 + 精确文件路径 |
+| test-driven-development → RED-GREEN-REFACTOR | → 每个任务含验证步骤 |
+| requesting-code-review → 预审查清单 | → `/verify` 最终验证 |
+| subagent-driven-development → 两阶段审查 | → `/analyze`（规格合规）+ `/verify`（代码质量） |
+| 分段呈现设计供确认 | → 分段呈现规则 |
+| 证据优于声明 | → 硬约束：所有"已完成"必须有可验证证据 |
