@@ -56,21 +56,7 @@ PRD / Spec / 原型 / MasterGo / 现有代码 / 公司组件库
 
 **Manifest 单一入口源**：`模块索引.md` 是三轮链路的 Manifest，负责模块身份、路径、状态和索引，不是事实大杂烩。`M{N}` 是稳定主键，目录名可以调整；需求、UI、原型、接口、代码模式、实现方案和任务细节仍分别由对应文件维护。Manifest 可以索引接口 ID，但禁止复制 method/path/请求响应结构。
 
-**中文命名优先，英文旧名兼容**：新生成的文件和文件夹一律使用中文名；读取已有历史产物时，如果中文名不存在，自动查找英文旧名。Manifest 中记录中文路径；如果读取到旧英文路径，允许本轮继续使用，但后续更新 Manifest 时应迁移为中文路径。
-
-| 中文默认名 | 英文兼容名 |
-| ---------- | ---------- |
-| `模块索引.md` | `module-index.md` |
-| `需求.md` | `requirement.md` |
-| `界面.md` | `ui.md` |
-| `原型.md` | `prototype.md` |
-| `审查记录.md` | `review-notes.md` |
-| `设计/` | `design/` |
-| `需求说明.md` | `requirements.md` |
-| `代码参考.md` | `code-reference.md` |
-| `接口契约.md` | `api-contract.md` |
-| `前端设计.md` | `frontend-design.md` |
-| `编码任务.md` | `claude-code-task.md` |
+**中文产物命名**：新生成的业务文件和业务文件夹一律使用中文名，Manifest 只记录中文路径。不要主动查找、生成、迁移或写回旧英文产物名；如果用户显式提供旧英文文件路径，可作为普通输入读取，但不得把旧英文名作为默认规则。
 
 稳定 ID 不中文化：`M{N}`、`API-Mx-xxx`、`T-Mx-xx` 必须保持机器可读。
 
@@ -201,15 +187,13 @@ Manifest 只做入口索引，不承载详细事实：
 
 只按 `编码任务.md` 执行任务；用户必须指定本轮执行的任务 ID 或任务范围。必要时通过任务头部的 `来源 Manifest: 模块索引.md#M{N}` 回溯模块路径，并读取同目录的 `前端设计.md`、`代码参考.md` 章节，以及任务引用的根级 `接口契约.md` 接口 ID。不要用“实现某模块”替代任务 ID。完成后必须输出改动文件、验证命令结果、Regression Check、Defensive Code。
 
-当用户只提供模块目录、设计目录或旧英文任务包时，任务入口按以下顺序发现，找到第一个即停止：
+当用户只提供模块目录或设计目录时，任务入口按以下顺序发现，找到第一个即停止：
 
 1. 用户显式提供的 `编码任务.md`。
 2. `{模块目录}/设计/编码任务.md`。
-3. `{模块目录}/design/claude-code-task.md`。
-4. `{模块目录}/编码任务.md`。
-5. `{模块目录}/claude-code-task.md`。
+3. `{模块目录}/编码任务.md`。
 
-如果读取到旧英文入口，允许本轮继续执行；若需要更新任务包，优先写回中文路径 `设计/编码任务.md`，不得同时维护两份任务事实源。
+如果用户显式提供旧英文任务包路径，可作为普通输入读取；本轮如需更新任务包，必须写回中文路径 `设计/编码任务.md`，不得同时维护两份任务事实源。
 
 涉及真实联调的任务必须依赖 `Confirmed` 接口；仅做前端本地骨架或 Mock 时，接口状态至少为 `Reviewed`。如果接口字段、path、状态或已确认语义冲突，停止并输出阻塞项，禁止擅自修改已确认接口语义。
 
@@ -421,11 +405,11 @@ UI 图层链接如果能识别就写入 界面.md；不能确认就写入 审查
 
 按需读取以下文件，不要一次性加载全部：
 
-- `references/工作流.md`：完整执行流程、MCP 规则、Agent 状态机。
-- `references/前端设计智能体蓝图.md`：系统总设计蓝图；当需要理解整体架构、Agent 分工、MCP 设计、Prompt 约束时读取。
-- `references/需求说明模板.md`：结构化需求模板。
-- `references/代码参考模板.md`（新增）：代码参考手册模板。
-- `references/模块索引模板.md`：Manifest 单一入口源模板；`module-split` 生成 `模块索引.md` 时读取。
-- `references/接口契约模板.md`（新增）：默认 API 契约总账模板；`module-design` 生成或更新 `接口契约.md` 时读取。
-- `references/前端设计模板.md`：AI 可落地前端设计书模板（v2 重构版）。
-- `references/编码任务模板.md`：Claude Code 任务包模板（v2 增强版）。
+- `references/workflow.md`：完整执行流程、MCP 规则、Agent 状态机。
+- `references/frontDesignAgent.md`：系统总设计蓝图；当需要理解整体架构、Agent 分工、MCP 设计、Prompt 约束时读取。
+- `references/requirements-template.md`：结构化需求模板。
+- `references/code-reference-template.md`（新增）：代码参考手册模板。
+- `references/module-index-template.md`：Manifest 单一入口源模板；`module-split` 生成 `模块索引.md` 时读取。
+- `references/api-contract-template.md`（新增）：默认 API 契约总账模板；`module-design` 生成或更新 `接口契约.md` 时读取。
+- `references/frontend-design-template.md`：AI 可落地前端设计书模板（v2 重构版）。
+- `references/claude-code-task-template.md`：Claude Code 任务包模板（v2 增强版）。

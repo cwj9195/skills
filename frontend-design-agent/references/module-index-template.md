@@ -21,23 +21,9 @@
 | ------- | -------- | -------- | ----------- | -- | --------- | ------------ | ------------ | -------- | ------------ | ------------ | -------- |
 | M{N} | TODO | `M{N}-{中文模块名}/` | `M{N}-{中文模块名}/需求.md` | `M{N}-{中文模块名}/界面.md` | `M{N}-{中文模块名}/原型.md` | `M{N}-{中文模块名}/审查记录.md` | `M{N}-{中文模块名}/设计/` | Split / Reviewed / Designing / Designed / Implementing / Done / Blocked | 待审查 / 已审查 / 待补图 / 阻塞 | API-M{N}-TODO / 无 | PRD(section:line) |
 
-### 2.1 英文旧名兼容
+### 2.1 中文产物命名
 
-新生成的路径必须写中文名；读取已有历史产物时，如果中文名不存在，可按以下旧名兼容读取。后续更新本 Manifest 时，应把路径迁移为中文名。
-
-| 中文默认名 | 英文兼容名 |
-| ---------- | ---------- |
-| `模块索引.md` | `module-index.md` |
-| `需求.md` | `requirement.md` |
-| `界面.md` | `ui.md` |
-| `原型.md` | `prototype.md` |
-| `审查记录.md` | `review-notes.md` |
-| `设计/` | `design/` |
-| `需求说明.md` | `requirements.md` |
-| `代码参考.md` | `code-reference.md` |
-| `接口契约.md` | `api-contract.md` |
-| `前端设计.md` | `frontend-design.md` |
-| `编码任务.md` | `claude-code-task.md` |
+新生成的业务路径必须写中文名，Manifest 只记录中文路径。不要主动查找、生成、迁移或写回旧英文产物名；如果用户显式提供旧英文文件路径，可作为普通输入读取，但不得写入本 Manifest 作为默认路径。
 
 ## 3. 模块锚点
 

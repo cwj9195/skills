@@ -54,23 +54,9 @@ initial → mode_select ┬→ module_split → done
 
 收到请求后先判断模式，并在回复开头声明当前模式、本轮产出和本轮不会做什么。
 
-### 中文命名与旧名兼容
+### 中文产物命名
 
-新生成的产物必须使用中文名；读取历史产物时，如果中文名不存在，按以下英文旧名兼容读取。Manifest 中记录中文路径；如果本轮读取到英文旧名，后续更新 Manifest 时迁移为中文路径。
-
-| 中文默认名 | 英文兼容名 |
-| ---------- | ---------- |
-| `模块索引.md` | `module-index.md` |
-| `需求.md` | `requirement.md` |
-| `界面.md` | `ui.md` |
-| `原型.md` | `prototype.md` |
-| `审查记录.md` | `review-notes.md` |
-| `设计/` | `design/` |
-| `需求说明.md` | `requirements.md` |
-| `代码参考.md` | `code-reference.md` |
-| `接口契约.md` | `api-contract.md` |
-| `前端设计.md` | `frontend-design.md` |
-| `编码任务.md` | `claude-code-task.md` |
+新生成的业务产物必须使用中文名，Manifest 只记录中文路径。不要主动查找、生成、迁移或写回旧英文产物名；如果用户显式提供旧英文文件路径，可作为普通输入读取，但不得把旧英文名作为默认规则。
 
 稳定 ID 不中文化：`M{N}`、`API-Mx-xxx`、`T-Mx-xx` 必须保持机器可读。
 
