@@ -33,6 +33,9 @@ M{N}-{模块名}/
   ui.md
   prototype.md
   review-notes.md
+  sources/
+    mastergo/
+      UI-M{N}-xxx.dsl.json（MasterGo DSL 成功获取后必落盘）
 ```
 
 `module-design` 默认生成或更新 5 份核心设计产物：
@@ -47,7 +50,8 @@ requirements-detail.md → code-reference.md → api-contract.md → frontend-de
 - [sources/source-map.md](sources/source-map.md)：可选来源登记表；当来源多于一个或 PRD 来自网页时生成。
 - [module-index.md](module-index.md)：Manifest 单一入口源，只维护模块身份、路径、状态和索引。
 - [requirements.md](requirements.md) / [requirements-detail.md](requirements-detail.md)：需求事实。
-- [ui.md](ui.md)：UI 事实。
+- [ui.md](ui.md)：UI 事实；只保存可读摘要、组件线索、token 线索和 DSL 文件链接，禁止粘贴完整 MasterGo DSL。
+- [M{N}/sources/mastergo/](sources/mastergo/)：模块级 MasterGo DSL 原始响应目录；成功调用 `mastergo-magic-mcp.getDsl` 后必须保存完整 JSON 响应，供审查和 `module-design` 读取。
 - [prototype.md](prototype.md)：原型事实。
 - [code-reference.md](code-reference.md)：代码模式事实源。
 - [api-contract.md](api-contract.md)：接口契约唯一事实源。
@@ -139,6 +143,8 @@ Canonical filename mapping（legacy 中文名只读兼容）：
 - `api-contract.md` 是接口契约唯一事实源；`requirements-detail.md`、`frontend-design.md`、`implementation-tasks.md` 只能引用接口 ID 或保留摘要。
 - 接口状态只能是 `Draft`、`Reviewed`、`Confirmed`、`Changed`。真实联调必须 `Confirmed`；本地骨架或 Mock 至少 `Reviewed`；`Draft` 不得作为真实联调任务的非阻塞前提。
 - 检测到 MasterGo 链接时，必须尝试 `mastergo-magic-mcp.getDsl`；不得只记录链接。成功后的 DSL 才能作为 Verified UI Evidence；失败时写入 `review-notes.md` 或 TODO，标记 Fallback / Unverified。
+- MasterGo DSL 调用成功后，必须将完整 DSL 响应落盘到模块内 [sources/mastergo/](sources/mastergo/) 目录，文件名使用 `UI-M{N}-xxx.dsl.json`；[ui.md](ui.md) 只写摘要和链接，禁止把完整 DSL JSON 粘贴进正文。
+- `module-design` 生成 UI 设计前，必须读取对应 [sources/mastergo/](sources/mastergo/) DSL JSON 或结构化提炼文件；如果只有 [ui.md](ui.md) 摘要而无原始 DSL 文件，则不得把 UI Evidence 判定为足够设计输入，必须在 [review-notes.md](review-notes.md) 或澄清记录中标记阻塞。
 - `ui.md` 中截图、DSL、原型素材路径必须使用 Markdown 链接；表格内用 `[截图](../sources/xxx.png)`，正文预览用 `![截图说明](../sources/xxx.png)`。禁止只写反引号路径作为唯一引用。
 - 所有引用型稳定 ID 必须可跳转：引用处使用 `[ID](#anchor)` 或 `[ID](相对路径#anchor)`，定义处使用 `<a id="anchor"></a>`。生成实际产物时锚点必须统一小写，例如 `<a id="apihint-m2-001"></a>` 与 `[APIHINT-M2-001](#apihint-m2-001)`。禁止裸写 `UI-001`、`API-Mx-xxx`、`REQ-Mx-xxx`、`T-Mx-xx` 等作为唯一引用；表格里的定义值可裸写，但指向别处时必须写链接。
 - **路径即链接**：所有文件路径、代码位置、组件文档、sources URL、快照行号等指向性内容，必须使用 `[显示文本](相对路径或URL)` 格式。禁止裸写反引号路径（如 `` `src/views/xxx.vue` ``）作为唯一引用；仅在代码块、命令行、字符串字面量和示例目录树中允许裸写路径。示例：`[src/views/ProductList.vue](src/views/ProductList.vue)` 而非 `` `src/views/ProductList.vue` ``。

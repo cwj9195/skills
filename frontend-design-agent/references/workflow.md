@@ -88,11 +88,17 @@ M1-{模块名}/
   ui.md
   prototype.md
   review-notes.md
+  sources/
+    mastergo/
+      UI-M1-xxx.dsl.json（MasterGo DSL 成功获取后必落盘）
 M2-{模块名}/
   requirements.md
   ui.md
   prototype.md
   review-notes.md
+  sources/
+    mastergo/
+      UI-M2-xxx.dsl.json（MasterGo DSL 成功获取后必落盘）
 ```
 
 Legacy input fallback：读取时兼容 `模块索引.md`、`来源/`、`需求.md`、`界面.md`、`原型.md`、`审查记录.md`，但新写入仍使用 canonical 英文路径。
@@ -105,6 +111,7 @@ Legacy input fallback：读取时兼容 `模块索引.md`、`来源/`、`需求.
 - [module-index.md](module-index.md) 是 Manifest，只维护模块身份、路径、状态和索引；字段结构见 [module-index-template.md](module-index-template.md)。
 - 每个模块目录包含 `requirements.md`、`ui.md`、`prototype.md`、[review-notes.md](review-notes.md)。
 - [ui.md](ui.md) 字段结构见 `module-ui-template.md`；截图、DSL、原型素材路径必须使用 Markdown 链接，不得只写反引号路径作为唯一引用。
+- MasterGo DSL 成功获取后，完整响应必须保存到模块内 [sources/mastergo/](sources/mastergo/)；[ui.md](ui.md) 只写摘要、组件线索、token 线索和 DSL 文件链接。
 - 只记录接口线索，例如列表查询、导入、导出、校验、提交；不得生成正式 [api-contract.md](api-contract.md)。
 - 不提前确定 method/path/字段为已确认事实。
 - PRD、UI、原型冲突写入 [review-notes.md](review-notes.md)，不得擅自裁决为事实。
@@ -123,8 +130,10 @@ Legacy input fallback：读取时兼容 `模块索引.md`、`来源/`、`需求.
 MasterGo 规则：
 
 - 检测到 MasterGo 链接时，必须尝试 `mastergo-magic-mcp.getDsl`。
-- 只有 DSL 调用成功后，才能作为 Verified UI Evidence 写入 [ui.md](ui.md)。
-- 调用失败时写入 [review-notes.md](review-notes.md)，记录失败原因、降级方式和待补材料，标记 Fallback / Unverified。
+- 只有 DSL 调用成功且完整响应已落盘后，才能作为 Verified UI Evidence 写入 [ui.md](ui.md)。
+- DSL 成功分支：将完整响应保存为模块内 [sources/mastergo/UI-M{N}-xxx.dsl.json](sources/mastergo/UI-M{N}-xxx.dsl.json)，在 [ui.md](ui.md) 中写 DSL 文件链接、提取时间、结构摘要、主要组件、交互状态和关键 token；如 [review-notes.md](review-notes.md) 存在对应阻塞项，改为已解决或部分解决，并保留未成功图层的待补记录。
+- DSL 失败分支：不写已提取 / Verified；在 [review-notes.md](review-notes.md) 记录失败原因、重试时间、降级方式和待补材料，标记 Fallback / Unverified。
+- [ui.md](ui.md) 禁止粘贴完整 DSL JSON；完整 DSL 只能以 [sources/mastergo/](sources/mastergo/) 文件链接作为原始 Evidence。
 - [ui.md](ui.md) 表格内截图使用 `[截图](../sources/xxx.png)`，正文预览使用 `![截图说明](../sources/xxx.png)`。
 - [frontend-design.md](frontend-design.md) 位于 [M{N}/design/](M{N}/design/) 时，如引用截图，使用 `[截图](../../sources/xxx.png)` 或 `![截图说明](../../sources/xxx.png)`。
 - 所有 UI Source 引用必须可跳转：定义处提供 `<a id="ui-m{N}-001"></a>`，引用处使用 `[UI-M{N}-001](#ui-m{N}-001)`；生成实际模块时替换为 `ui-m2-001` 这类小写锚点，禁止裸写 `UI-M{N}-001` 作为唯一引用。
@@ -138,6 +147,7 @@ MasterGo 规则：
 - 优先读取 [module-index.md#M{N}](module-index.md#M{N})，通过 Manifest 定位模块输入、设计输出目录和根级公共产物路径。
 - [module-index.md](module-index.md) 中必须有 `<a id="M{N}"></a>` 稳定锚点和 `### M{N}: 模块名` 标题。
 - 自动读取当前模块的 `requirements.md`、`ui.md`、`prototype.md`、[review-notes.md](review-notes.md)。
+- 若 [ui.md](ui.md) 中存在已提取 / Verified 的 MasterGo UI Source，必须读取对应 [sources/mastergo/](sources/mastergo/) DSL JSON 或结构化提炼文件；只有摘要而无原始 DSL 文件时，必须记录阻塞，不得直接生成 UI 设计。
 - 只有 Manifest 缺少模块、路径不可解析或输入文件缺失时，才向用户索要路径或补充材料。
 - 不读取完整 PRD 作为主要输入，不处理其他模块。
 

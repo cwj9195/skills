@@ -1,6 +1,6 @@
 # ui.md 模板（module-split 第一轮）
 
-> 本文件记录当前模块的 UI / 视觉 / 设计稿事实，用于人工审查和后续 `module-design`。MasterGo 链接必须在后续阶段尝试 `mastergo-magic-mcp.getDsl`；截图、DSL、原型素材路径必须使用 Markdown 链接，不得只写反引号路径作为唯一引用。
+> 本文件记录当前模块的 UI / 视觉 / 设计稿事实，用于人工审查和后续 `module-design`。MasterGo 链接必须尝试 `mastergo-magic-mcp.getDsl`；成功后完整 DSL 响应必须保存到模块内 [sources/mastergo/](sources/mastergo/) 并在本文件链接引用。本文件只写可读摘要、组件线索、token 线索和 DSL 文件链接，不粘贴完整 DSL JSON；截图、DSL、原型素材路径必须使用 Markdown 链接，不得只写反引号路径作为唯一引用。
 
 | 项目          | 内容                           |
 | ------------- | ------------------------------ |
@@ -12,9 +12,9 @@
 
 ## 1. UI Source 清单
 
-| UI Source ID | 页面/状态名称 | MasterGo 链接 | 截图 | DSL 状态 | 证据 | 原文摘要 |
-| ------------ | ------------- | ------------- | ---- | -------- | -------- | -------- |
-| UI-M{N}-001 | TODO | [MasterGo](TODO) / 无 | [截图](../sources/TODO.png) / 无 | 待提取 / 已提取 / 失败 | Source: [PRD-001](../module-index.md#source-prd-001)<br/>快照: [../sources/PRD.md:Lx-Ly](../sources/PRD.md#Lx) | TODO |
+| UI Source ID | 页面/状态名称 | MasterGo 链接 | 截图 | DSL 状态 | DSL 文件 | 证据 | 原文摘要 |
+| ------------ | ------------- | ------------- | ---- | -------- | -------- | -------- | -------- |
+| UI-M{N}-001 | TODO | [MasterGo](TODO) / 无 | [截图](../sources/TODO.png) / 无 | 待提取 / 已提取 / 失败 | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 | Source: [PRD-001](../module-index.md#source-prd-001)<br/>快照: [../sources/PRD.md:Lx-Ly](../sources/PRD.md#Lx) | TODO |
 
 ## 2. UI Source 详情锚点
 
@@ -30,6 +30,10 @@
 | MasterGo 链接 | [MasterGo](TODO) / 无 |
 | 截图 | [截图](../sources/TODO.png) / 无 |
 | DSL 状态 | 待提取 / 已提取 / 失败 |
+| DSL 文件 | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 |
+| DSL 摘要 | TODO：根节点、页面尺寸、主要区域、关键状态；摘要不能替代原始 DSL Evidence。 |
+| 主要组件 | TODO |
+| 关键 token | TODO |
 | 证据 | Source: [PRD-001](../module-index.md#source-prd-001)<br/>快照: [../sources/PRD.md:Lx-Ly](../sources/PRD.md#Lx) |
 | 原文摘要 | TODO |
 
@@ -49,9 +53,9 @@
 
 ## 5. MasterGo DSL 记录
 
-| UI Source ID | DSL 获取状态 | 处理结果 | 降级方式 | 证据 |
-| ------------ | ------------ | -------- | -------- | -------- |
-| [UI-M{N}-001](#ui-m{N}-001) | 待提取 / 已提取 / 失败 | TODO | 无 / 用户截图 / 用户导出 DSL | [MasterGo](TODO) / Fallback |
+| UI Source ID | DSL 获取状态 | DSL 文件 | 提取时间 | 结构摘要 | 组件文档线索 | 降级方式 | 证据 |
+| ------------ | ------------ | -------- | -------- | -------- | ------------ | -------- | -------- |
+| [UI-M{N}-001](#ui-m{N}-001) | 待提取 / 已提取 / 失败 | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 | TODO | TODO | TODO | 无 / 用户截图 / 用户导出 DSL | [MasterGo](TODO) / Fallback |
 
 ## 6. 素材与 ID 链接规范
 
@@ -60,6 +64,8 @@
 - [ ] 禁止只写 `` `../sources/xxx.png` `` 作为唯一引用。
 - [ ] 第一轮 [M{N}/ui.md](ui.md) 使用 [../sources/xxx](../sources/xxx)。
 - [ ] 第二轮 [M{N}/design/frontend-design.md](design/frontend-design.md) 若引用截图，使用 [../../sources/xxx](../../sources/xxx)。
-- [ ] 每个 UI Source 必须包含 UI Source ID、页面/状态名称、MasterGo 链接、截图链接、DSL 状态、证据和原文摘要。
+- [ ] 每个 UI Source 必须包含 UI Source ID、页面/状态名称、MasterGo 链接、截图链接、DSL 状态、DSL 文件链接、证据和原文摘要。
+- [ ] MasterGo DSL 成功获取时，必须存在对应 [sources/mastergo/UI-M{N}-001.dsl.json](sources/mastergo/UI-M{N}-001.dsl.json) 原始 JSON；摘要不能替代原始 Evidence。
+- [ ] [ui.md](ui.md) 只写 DSL 摘要、主要组件、交互状态、关键 token 和文件链接，禁止粘贴完整 DSL JSON。
 - [ ] 每个 UI Source 定义处必须有 `<a id="ui-m{N}-001"></a>` 形式的稳定锚点，生成实际模块时替换为 `ui-m2-001` 这类小写锚点。
 - [ ] 引用 UI Source 时必须写 `[UI-M{N}-001](#ui-m{N}-001)`，禁止裸写 `UI-M{N}-001` 作为唯一引用。
