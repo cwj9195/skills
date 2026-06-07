@@ -1,75 +1,77 @@
 # 接口契约.md 模板（v2.3 默认产物）
 
-| 项目 | 内容 |
-| ---- | ---- |
-| 契约名称 | TODO |
-| 所属设计根目录 | `apps/{app}/docs/设计/` |
-| 来源模块索引 | `模块索引.md` |
-| 当前更新模块 | `M{N}-{中文模块名}` |
+| 项目                 | 内容                                                 |
+| -------------------- | ---------------------------------------------------- |
+| 契约名称             | TODO                                                 |
+| 所属设计根目录       | `apps/{app}/docs/设计/`                              |
+| 来源模块索引         | `模块索引.md`                                        |
+| 当前更新模块         | `M{N}-{中文模块名}`                                  |
 | 模块设计目录默认引用 | `M{N}-{中文模块名}/设计/` 内使用 `../../接口契约.md` |
-| 状态 | [ ] Draft [ ] Reviewed [ ] Confirmed [ ] Changed |
-| 生成时间 | TODO |
+| 状态                 | [ ] Draft [ ] Reviewed [ ] Confirmed [ ] Changed     |
+| 生成时间             | TODO                                                 |
 
 > **定位**：本文档是接口契约唯一事实源。`需求说明.md` 只写接口需求摘要，`前端设计.md` 和 `编码任务.md` 只引用接口 ID，不复制完整请求/响应结构。`模块索引.md` 只允许索引接口 ID，不得复制 method/path/请求响应结构。
 
 ## 1. 状态定义
 
-| 状态 | 含义 | 可进入实现 |
-| ---- | ---- | ---------- |
-| `Draft` | 前端根据 PRD/UI/原型推导，未人工确认 | 否 |
-| `Reviewed` | 产品/前端已审查，后端未确认 | 仅 Mock 或本地骨架 |
-| `Confirmed` | 后端/联调方已确认，可用于真实联调 | 是 |
-| `Changed` | 已确认后发生变更，必须记录变更原因 | 视变更确认结果 |
+| 状态        | 含义                                 | 可进入实现         |
+| ----------- | ------------------------------------ | ------------------ |
+| `Draft`     | 前端根据 PRD/UI/原型推导，未人工确认 | 否                 |
+| `Reviewed`  | 产品/前端已审查，后端未确认          | 仅 Mock 或本地骨架 |
+| `Confirmed` | 后端/联调方已确认，可用于真实联调    | 是                 |
+| `Changed`   | 已确认后发生变更，必须记录变更原因   | 视变更确认结果     |
 
 ## 2. 模块接口覆盖记录
 
-| 模块 | 是否有新增/变更接口 | 覆盖说明 | 状态 | Evidence |
-| ---- | ------------------ | -------- | ---- | -------- |
-| M{N} | 是/否 | 无新增/变更接口 / 见接口总览 API-M{N}-TODO | Draft / Reviewed / Confirmed / Changed | Module(path:section) |
+| 模块 | 是否有新增/变更接口 | 覆盖说明                                   | 状态                                   | 证据                 |
+| ---- | ------------------- | ------------------------------------------ | -------------------------------------- | -------------------- |
+| M{N} | 是/否               | 无新增/变更接口 / 见接口总览 [API-M{N}-TODO](#api-m{N}-todo) | Draft / Reviewed / Confirmed / Changed | 来源: [PRD-001](模块索引.md#source-prd-001)<br/>快照: [来源/PRD.md:Lx-Ly](来源/PRD.md#Lx) |
 
 ## 3. 接口总览
 
-| 接口 ID | 模块 | 场景 | Method | Path | 状态 | 权限 | Evidence |
-| ------- | ---- | ---- | ------ | ---- | ---- | ---- | -------- |
-| API-M{N}-TODO | M{N} | TODO | GET/POST/PUT/DELETE | `/TODO` / Proposed path: `/TODO` | Draft / Reviewed / Confirmed / Changed | TODO | PRD(section:line) / Inferred |
+| 接口 ID       | 模块 | 场景 | Method              | Path                             | 状态                                   | 权限 | 证据 | 原文摘要 |
+| ------------- | ---- | ---- | ------------------- | -------------------------------- | -------------------------------------- | ---- | ---- | -------- |
+| [API-M{N}-TODO](#api-m{N}-todo) | M{N} | TODO | GET/POST/PUT/DELETE | `/TODO` / Proposed path: `/TODO` | Draft / Reviewed / Confirmed / Changed | TODO | 来源: [PRD-001](模块索引.md#source-prd-001)<br/>快照: [来源/PRD.md:Lx-Ly](来源/PRD.md#Lx) | TODO / Inferred |
 
 ## 4. 接口详情
 
+<a id="api-m{N}-todo"></a>
 ### API-M{N}-TODO：TODO
 
-| 项目 | 内容 |
-| ---- | ---- |
-| 模块 | M{N} |
-| 场景 | TODO |
-| Method | TODO |
-| Path | TODO / Proposed path: TODO |
-| 权限 | TODO |
-| 状态 | Draft / Reviewed / Confirmed / Changed |
-| Evidence | PRD(section:line) / Clarify(round:question) / API(doc:section) / Inferred |
+| 项目     | 内容                                                                      |
+| -------- | ------------------------------------------------------------------------- |
+| 模块     | M{N}                                                                      |
+| 场景     | TODO                                                                      |
+| Method   | TODO                                                                      |
+| Path     | TODO / Proposed path: TODO                                                |
+| 权限     | TODO                                                                      |
+| 状态     | Draft / Reviewed / Confirmed / Changed                                    |
+| 证据 | 来源: [PRD-001](模块索引.md#source-prd-001)<br/>快照: [来源/PRD.md:Lx-Ly](来源/PRD.md#Lx) |
+| 原文摘要 | TODO / Clarify(round:question) / API(doc:section) / Inferred |
 
 #### 请求参数
 
-| 字段 | 类型 | 必填 | 说明 | Evidence |
-| ---- | ---- | ---- | ---- | -------- |
-| TODO | TODO | 是/否 | TODO | TODO |
+| 字段 | 类型 | 必填  | 说明 | 证据 |
+| ---- | ---- | ----- | ---- | -------- |
+| TODO | TODO | 是/否 | TODO | 来源: [PRD-001](模块索引.md#source-prd-001)<br/>快照: [来源/PRD.md:Lx-Ly](来源/PRD.md#Lx) |
 
 #### 响应结构
 
-| 字段 | 类型 | 说明 | Evidence |
+| 字段 | 类型 | 说明 | 证据 |
 | ---- | ---- | ---- | -------- |
-| TODO | TODO | TODO | TODO |
+| TODO | TODO | TODO | 来源: [PRD-001](模块索引.md#source-prd-001)<br/>快照: [来源/PRD.md:Lx-Ly](来源/PRD.md#Lx) |
 
 #### 错误码与异常
 
-| 错误码/场景 | 前端处理 | Evidence |
+| 错误码/场景 | 前端处理 | 证据 |
 | ----------- | -------- | -------- |
-| TODO | TODO | TODO |
+| TODO        | TODO     | 来源: [PRD-001](模块索引.md#source-prd-001)<br/>快照: [来源/PRD.md:Lx-Ly](来源/PRD.md#Lx) |
 
 #### 变更记录
 
-| 时间 | 状态变化 | 变更原因 | 确认人/来源 |
-| ---- | -------- | -------- | ----------- |
-| TODO | Draft → Reviewed / Confirmed / Changed | TODO | TODO |
+| 时间 | 状态变化                               | 变更原因 | 确认人/来源 |
+| ---- | -------------------------------------- | -------- | ----------- |
+| TODO | Draft → Reviewed / Confirmed / Changed | TODO     | TODO        |
 
 ## 5. 人工审查清单
 
@@ -79,4 +81,5 @@
 - [ ] Draft 接口如使用 Proposed path，已标记 Inferred / 待确认。
 - [ ] `Draft` 接口未进入真实联调任务。
 - [ ] `前端设计.md` 和 `编码任务.md` 只引用接口 ID。
+- [ ] Source ID 引用必须指向 `模块索引.md` 的 Source Registry，例如 `[PRD-001](模块索引.md#source-prd-001)`。
 - [ ] 已确认接口发生变化时，状态标记为 `Changed` 并补充变更记录。
