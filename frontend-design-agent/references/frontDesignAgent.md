@@ -22,7 +22,7 @@ FrontDesignAgent 的目标不是生成“看起来完整”的前端设计文档
 | 接口散落在多个文件                          | `api-contract.md` 成为接口契约唯一事实源           |
 | 任务太大，无法直接执行                      | `implementation-tasks.md` 控制到 2-5 分钟粒度              |
 | PRD、UI、原型冲突没有承接点                 | 第一轮用模块切片和 `review-notes.md` 支持人工审查  |
-| MasterGo 链接只被记录，缺少真实 UI Evidence | 检测到链接必须尝试 `mastergo-magic-mcp.getDsl` |
+| MasterGo 链接只被记录，缺少真实 UI Evidence | 检测到链接必须优先尝试 `mcp__getComponentGenerator`，必要时补充 `mcp__getDsl` |
 | ID 只能阅读不能跳转                         | 引用型稳定 ID 使用 Markdown 链接和显式锚点     |
 
 ## 3. 架构概览
@@ -70,9 +70,12 @@ mode_select
 | ---------------------- | --------------------------- | ----------------------------------------------- |
 | 代码结构、符号、调用链 | Codegraph MCP               | 只读 RTK 命令，标记 Fallback                    |
 | PRD/原型/组件库文档    | Chrome DevTools MCP         | 用户导出文件、截图或 Markdown                   |
-| MasterGo 图层          | `mastergo-magic-mcp.getDsl` | 用户导出 DSL 或截图，标记 Fallback / Unverified |
+| MasterGo 图层          | `mcp__getComponentGenerator` | `mcp__getDsl` / `mcp__getMeta` / 用户导出 DSL 或截图，标记 Fallback / Unverified |
+| MasterGo 原始 DSL       | `mcp__getDsl` | 输出过大或截断时改用 `mcp__getComponentGenerator` |
+| MasterGo D2C 资源       | `mcp__getD2c` | 仅在存在 `mastergo://getd2c/...` contentId 时使用 |
+| MasterGo 组件文档       | `mcp__getComponentLink` | 仅在 DSL 返回 `componentDocumentLinks` 时使用 |
 
-Codegraph 是 `code-reference.md` 的主要证据来源；MasterGo DSL 成功后才是 Verified UI Evidence。
+Codegraph 是 `code-reference.md` 的主要证据来源；MasterGo canonical DSL 成功落盘后才是 Verified UI Evidence。`mcp__getComponentGenerator` 是大图层、输出截断和本地落盘场景的首选路径。
 
 ## 6. 关键风险
 

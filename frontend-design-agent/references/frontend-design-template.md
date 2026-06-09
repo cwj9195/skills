@@ -80,7 +80,7 @@
 
 ### API 注册（可直接粘贴）
 
-> APIMap 代码必须引用 [api-contract.md](../../api-contract.md) 中真实存在的接口 ID；method/path/请求/响应语义以 [api-contract.md](../../api-contract.md) 为准。
+> APIMap 代码必须引用 [api-contract.md](../../api-contract.md) 中真实存在的接口 ID；method/path/请求/响应语义以 [api-contract.md](../../api-contract.md) 为准。本文档不得自行改写 method/path；若发现后端契约差异，必须回写 [api-contract.md](../../api-contract.md) 差异表。
 
 ```ts
 // request/record/goods/{module}/index.ts

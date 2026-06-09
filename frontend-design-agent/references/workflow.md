@@ -129,10 +129,14 @@ Legacy input fallback：读取时兼容 `模块索引.md`、`来源/`、`需求.
 
 MasterGo 规则：
 
-- 检测到 MasterGo 链接时，必须尝试 `mastergo-magic-mcp.getDsl`。
-- 只有 DSL 调用成功且完整响应已落盘后，才能作为 Verified UI Evidence 写入 [ui.md](ui.md)。
-- DSL 成功分支：将完整响应保存为模块内 [sources/mastergo/UI-M{N}-xxx.dsl.json](sources/mastergo/UI-M{N}-xxx.dsl.json)，在 [ui.md](ui.md) 中写 DSL 文件链接、提取时间、结构摘要、主要组件、交互状态和关键 token；如 [review-notes.md](review-notes.md) 存在对应阻塞项，改为已解决或部分解决，并保留未成功图层的待补记录。
-- DSL 失败分支：不写已提取 / Verified；在 [review-notes.md](review-notes.md) 记录失败原因、重试时间、降级方式和待补材料，标记 Fallback / Unverified。
+- 检测到 MasterGo 链接时，必须先解析 `fileId`、`layer_id`、`source_layer_id` 和 `shortLink`；禁止把 `page_id` 当作 `layerId`。
+- 有 `fileId + layerId` 时，优先调用 `mcp__getComponentGenerator`，`rootPath` 传入模块级 [sources/mastergo/](sources/mastergo/) 绝对路径。
+- `mcp__getDsl` 仍可用于原始 DSL 或短链 DSL；如果返回内容可完整保存，可直接保存为 [sources/mastergo/UI-M{N}-xxx.dsl.json](sources/mastergo/UI-M{N}-xxx.dsl.json)。
+- 若 `mcp__getDsl` 输出过大、上下文截断或无法完整落盘，必须继续尝试 `mcp__getComponentGenerator`；只有该路径也失败、超时或不可解析，才标记 Fallback / Unverified。
+- `mcp__getComponentGenerator` 成功后，保留 [.mastergo/](sources/mastergo/.mastergo/) 下的 `component-workflow.md` 与组件规格 JSON，并将规格 JSON 包装或复制为 canonical [sources/mastergo/UI-M{N}-xxx.dsl.json](sources/mastergo/UI-M{N}-xxx.dsl.json)。
+- 只有 canonical DSL JSON 可解析，且包含对应 `layerId` / `uiSourceId` 或能与 UI Source 明确映射，才能作为 Verified UI Evidence 写入 [ui.md](ui.md)。
+- DSL 成功分支：在 [ui.md](ui.md) 中写 DSL 文件链接、提取时间、结构摘要、主要组件、交互状态和关键 token；如 [review-notes.md](review-notes.md) 存在对应阻塞项，改为已解决或部分解决，并保留未成功图层的待补记录。
+- DSL 失败分支：不写已落盘 / Verified；在 [review-notes.md](review-notes.md) 记录失败工具、失败原因、是否已重试 `mcp__getComponentGenerator`、重试时间、降级方式和待补材料，标记 Fallback / Unverified。
 - [ui.md](ui.md) 禁止粘贴完整 DSL JSON；完整 DSL 只能以 [sources/mastergo/](sources/mastergo/) 文件链接作为原始 Evidence。
 - [ui.md](ui.md) 表格内截图使用 `[截图](../sources/xxx.png)`，正文预览使用 `![截图说明](../sources/xxx.png)`。
 - [frontend-design.md](frontend-design.md) 位于 [M{N}/design/](M{N}/design/) 时，如引用截图，使用 `[截图](../../sources/xxx.png)` 或 `![截图说明](../../sources/xxx.png)`。
@@ -156,7 +160,7 @@ MasterGo 规则：
 1. `clarify`：检查当前模块关键歧义；若无需补问，在 `requirements-detail.md` 的「澄清记录」写明依据。
 2. `evidence`：采集 PRD/UI/原型/代码/组件库 Evidence。
 3. `code_ref`：用 Codegraph 生成 `code-reference.md`。
-4. `api_contract`：生成或更新根级 [api-contract.md](api-contract.md)。
+4. `api_contract`：生成或更新根级 [api-contract.md](api-contract.md)，先产出 Frontend-Proposed API Contract；如已有后端契约材料，再导入为 Backend Contract Evidence 并做差异对齐。
 5. `design`：生成 `frontend-design.md`，引用 `code-reference.md` 章节和接口 ID。
 6. `analyze`：执行强制自审，不通过则回补。
 7. `task`：生成 `implementation-tasks.md`。
@@ -167,11 +171,18 @@ API 契约规则：
 - [api-contract.md](api-contract.md) 位于设计根目录，例如 [apps/pim/docs/design/api-contract.md](apps/pim/docs/design/api-contract.md)。
 - 单模块设计产物位于 `{module-dir}/design/` 时，默认相对引用为 [../../api-contract.md](../../api-contract.md)。
 - 每次 `module-design` 都必须生成或更新 [api-contract.md](api-contract.md)；无新增/变更接口也要写入“模块接口覆盖记录”。
+- 无后端 OpenAPI/YApi/Markdown/接口表时，仍必须从需求、UI 交互、字段和流程状态推导 Frontend-Proposed 契约；不得跳过接口设计。
+- 后端 OpenAPI/YApi/Markdown/接口表出现时，只作为 Backend Contract Evidence 导入；必须先与 Frontend-Proposed 契约做 diff，不得直接覆盖。
+- 对齐差异必须写入 [api-contract.md](api-contract.md) 的差异表；差异未解决时，对应接口不得进入 `Confirmed`。
 - 接口总览只放真实接口 ID，不把“无新增/变更接口”当作接口行。
-- 接口状态只能是 `Draft`、`Reviewed`、`Confirmed`、`Changed`。
-- Draft 接口允许使用 `Proposed path`，但必须标记 `Draft` / `Inferred` / `(待确认)`。
-- 真实联调必须 `Confirmed`；Mock 或本地骨架至少 `Reviewed`。
-- 多模块并行设计时，只允许更新当前模块 section 和全局总览中当前模块对应行。
+- 接口状态只能是 `Draft`、`Reviewed`、`Confirmed`、`Changed`；不新增状态值。
+- Draft 接口允许使用 `Proposed path`，但必须标记 `Draft` / `Inferred` / `(待确认)`，契约来源为 `Frontend-Proposed`，对齐状态为 `NotCompared`。
+- 真实联调必须 `Confirmed` 且对齐状态为 `Aligned`；Mock 或本地骨架至少 `Reviewed`；`Diff-Pending` 只能进入 Mock 或本地骨架。
+- 多模块并行设计时，只允许更新当前模块 section、全局总览中当前模块对应行，以及当前模块相关差异表。
+- `api-contract.md` 生成时必须严格按模板章节顺序输出：§0 全局约定 → §1 接口总览 → §2~§N 模块分节 → 错误码 → 差异表 → 待评审确认点 → 审查清单。
+- 每个模块的接口详情必须使用 `路径/入参/出参` 三行表 + Req/Resp/Dto/Enum 字段表，不得使用冗长的元数据表。
+- 响应类型必须在三行表的「出参」字段中显式标注 `ApiRespResult<XxxResp>` 或 `ApiRespResult<BasePageResult<XxxDto>>`。
+- 新增模块时，在 §0 之后按编号新增模块节，同步更新 §1 总览表和差异表。
 
 ## 5. `implement` 按任务实现阶段
 
@@ -248,12 +259,20 @@ API 契约规则：
 
 ### MasterGo
 
-检测到 MasterGo 链接时必须调用 `mastergo-magic-mcp.getDsl`。调用成功后抽取页面宽度、栅格、布局、组件层级、token 和交互状态。调用失败时记录失败原因、降级方式、待补材料和证据来源。
+检测到 MasterGo 链接时必须采集 MasterGo Evidence。优先顺序：
 
-DSL 结果处理：
+1. `mcp__getComponentGenerator`：有 `fileId + layerId` 时优先使用，负责本地落盘组件工作流和规格 JSON。
+2. `mcp__getDsl`：用于原始 DSL 或短链 DSL；内容可完整保存时可直接成为 canonical DSL。
+3. `mcp__getMeta`：用于站点/页面级结构和规则，只作辅助 Evidence。
+4. `mcp__getD2c`：仅在存在 `mastergo://getd2c/...` contentId 或需要 D2C HTML/资源落盘时使用。
+5. `mcp__getComponentLink`：仅在 DSL 返回 `componentDocumentLinks` 时补组件文档。
 
-- DSL ≤ 50KB：可内联关键结构。
-- DSL > 50KB：提取组件树、尺寸、布局、间距和 token，忽略纯装饰节点。
+结果处理：
+
+- canonical DSL 文件必须命名为 `UI-M{N}-xxx.dsl.json`，放在模块级 [sources/mastergo/](sources/mastergo/)。
+- `mcp__getComponentGenerator` 的 [.mastergo/](sources/mastergo/.mastergo/) 原始产物必须保留，canonical 文件可包装其组件规格并补充 `source`、`fileId`、`layerId`、`uiSourceId`、`generatedAt` 等元信息。
+- `mcp__getDsl` 输出过大或截断时，不得直接要求用户补材料，必须尝试 `mcp__getComponentGenerator`。
+- 失败时记录失败工具、失败原因、重试情况、最终状态、降级方式和证据来源。
 
 ### Evidence 可信度
 

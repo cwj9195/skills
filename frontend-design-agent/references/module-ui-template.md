@@ -1,6 +1,6 @@
 # ui.md 模板（module-split 第一轮）
 
-> 本文件记录当前模块的 UI / 视觉 / 设计稿事实，用于人工审查和后续 `module-design`。MasterGo 链接必须尝试 `mastergo-magic-mcp.getDsl`；成功后完整 DSL 响应必须保存到模块内 [sources/mastergo/](sources/mastergo/) 并在本文件链接引用。本文件只写可读摘要、组件线索、token 线索和 DSL 文件链接，不粘贴完整 DSL JSON；截图、DSL、原型素材路径必须使用 Markdown 链接，不得只写反引号路径作为唯一引用。
+> 本文件记录当前模块的 UI / 视觉 / 设计稿事实，用于人工审查和后续 `module-design`。MasterGo 链接必须优先尝试 `mcp__getComponentGenerator`，必要时补充 `mcp__getDsl` / `mcp__getMeta`；成功后完整 DSL 或组件规格必须保存到模块内 [sources/mastergo/](sources/mastergo/) 并在本文件链接引用。本文件只写可读摘要、组件线索、token 线索和 DSL 文件链接，不粘贴完整 DSL JSON；截图、DSL、原型素材路径必须使用 Markdown 链接，不得只写反引号路径作为唯一引用。
 
 | 项目          | 内容                           |
 | ------------- | ------------------------------ |
@@ -14,7 +14,7 @@
 
 | UI Source ID | 页面/状态名称 | MasterGo 链接 | 截图 | DSL 状态 | DSL 文件 | 证据 | 原文摘要 |
 | ------------ | ------------- | ------------- | ---- | -------- | -------- | -------- | -------- |
-| UI-M{N}-001 | TODO | [MasterGo](TODO) / 无 | [截图](../sources/TODO.png) / 无 | 待提取 / 已提取 / 失败 | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 | Source: [PRD-001](../module-index.md#source-prd-001)<br/>快照: [../sources/PRD.md:Lx-Ly](../sources/PRD.md#Lx) | TODO |
+| UI-M{N}-001 | TODO | [MasterGo](TODO) / 无 | [截图](../sources/TODO.png) / 无 | 待提取 / 已落盘 / 超时 / 失败 / Unverified / Verified | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 | Source: [PRD-001](../module-index.md#source-prd-001)<br/>快照: [../sources/PRD.md:Lx-Ly](../sources/PRD.md#Lx) | TODO |
 
 ## 2. UI Source 详情锚点
 
@@ -29,7 +29,7 @@
 | 页面/状态名称 | TODO |
 | MasterGo 链接 | [MasterGo](TODO) / 无 |
 | 截图 | [截图](../sources/TODO.png) / 无 |
-| DSL 状态 | 待提取 / 已提取 / 失败 |
+| DSL 状态 | 待提取 / 已落盘 / 超时 / 失败 / Unverified / Verified |
 | DSL 文件 | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 |
 | DSL 摘要 | TODO：根节点、页面尺寸、主要区域、关键状态；摘要不能替代原始 DSL Evidence。 |
 | 主要组件 | TODO |
@@ -55,7 +55,16 @@
 
 | UI Source ID | DSL 获取状态 | DSL 文件 | 提取时间 | 结构摘要 | 组件文档线索 | 降级方式 | 证据 |
 | ------------ | ------------ | -------- | -------- | -------- | ------------ | -------- | -------- |
-| [UI-M{N}-001](#ui-m{N}-001) | 待提取 / 已提取 / 失败 | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 | TODO | TODO | TODO | 无 / 用户截图 / 用户导出 DSL | [MasterGo](TODO) / Fallback |
+| [UI-M{N}-001](#ui-m{N}-001) | 待提取 / 已落盘 / 超时 / 失败 / Unverified / Verified | [DSL JSON](sources/mastergo/UI-M{N}-001.dsl.json) / 无 | TODO | TODO | TODO | 无 / 用户截图 / 用户导出 DSL | [MasterGo](TODO) / Fallback |
+
+### 5.1 getComponentGenerator 成功落盘示例
+
+| 项目 | 示例 |
+| ---- | ---- |
+| 原始产物 | [sources/mastergo/.mastergo/组件名.json](sources/mastergo/.mastergo/组件名.json) |
+| canonical DSL | [sources/mastergo/UI-M{N}-001.dsl.json](sources/mastergo/UI-M{N}-001.dsl.json) |
+| DSL 状态 | 已落盘 / Verified |
+| 说明 | canonical 文件可包装 `mcp__getComponentGenerator` 规格 JSON，并补充 `source`、`fileId`、`layerId`、`uiSourceId`、`generatedAt` 等元信息。 |
 
 ## 6. 素材与 ID 链接规范
 

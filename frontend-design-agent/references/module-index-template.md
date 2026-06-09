@@ -23,7 +23,7 @@
 | Source ID | 来源类型 | 原始地址或路径 | 快照路径 | 获取时间 | 可信度 | 降级原因 | 说明 |
 | --------- | -------- | -------------- | -------- | -------- | ------ | -------- | ---- |
 | PRD-001   | 本地 PRD / 网页 PRD | TODO | [sources/PRD.md](sources/PRD.md) | TODO | Verified / Fallback / Unverified | 无 / TODO | TODO |
-| UI-001    | MasterGo | TODO / 无 | 无 / [sources/MasterGo.md](sources/MasterGo.md) | TODO | Verified / Fallback / Unverified | 无 / TODO | `module-design` 阶段调用 getDsl |
+| UI-001    | MasterGo | TODO / 无 | 无 / 模块级 [sources/mastergo/](sources/mastergo/) | TODO | Verified / Partially Verified / Fallback / Unverified | 无 / 部分图层待提取 / 超时 / TODO | 优先 `mcp__getComponentGenerator` 落盘；必要时补充 `mcp__getDsl` |
 | PROTO-001 | CoDesign / 原型 | TODO / 无 | TODO / 无 | TODO | Verified / Fallback / Unverified | 无 / TODO | TODO |
 
 <a id="source-prd-001"></a>
@@ -42,7 +42,7 @@
 | ---- | ---- |
 | Source ID | UI-001 |
 | 快照路径 | 无 / [sources/MasterGo.md](sources/MasterGo.md) |
-| 说明 | `module-design` 阶段调用 getDsl |
+| 说明 | 记录 MasterGo 图层总数、已落盘 canonical DSL 数、失败/超时图层和待补材料；优先使用 `mcp__getComponentGenerator` 落盘。 |
 
 <a id="source-proto-001"></a>
 ### PROTO-001
