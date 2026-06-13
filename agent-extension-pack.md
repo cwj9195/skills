@@ -49,6 +49,7 @@
 | `/Users/amoy/Desktop/project/cckg/web-base` | UI/交互 bug 收尾必须包含 Regression Check 与 Defensive Code。 | 当前 cwd 属于该项目，或当前项目 AGENTS 显式引用该规则。 | `web-base/AGENTS.md` | 项目限定 | 2026-06-12 |
 | `/Users/amoy/Desktop/project/cckg/web-base` | 新增函数、组件、接口及公共声明时补齐 JSDoc；复杂注释解释设计原因、边界和权衡。 | 当前 cwd 属于该项目，或当前项目 AGENTS 显式引用该规则。 | `web-base/AGENTS.md` | 项目限定 | 2026-06-12 |
 | `/Users/amoy/Desktop/project/cckg/web-base` | 不削弱测试资产，不删除关键断言，不扩大 exclusions 绕过问题。 | 当前 cwd 属于该项目，或当前项目 AGENTS 显式引用该规则。 | `web-base/AGENTS.md` | 项目限定 | 2026-06-12 |
+| `/Users/amoy/Desktop/project/cckg/web-base` | PIM M2 `PreselectedImportPreviewFieldsDto` 字段清单以 `apps/pim/docs/260608-第1版/sources/PRD.md:306-364` 的“临时预览表编辑规则”为准；`rowIndex/importStatus` 放外层 `PreselectedImportPreviewDto`，`fields` 从 `sameProductNo` 开始。 | 维护 `apps/pim/docs/PIM商品中心接口契约.md` 或同步 M2 预选品批量导入契约时。 | 用户确认写入长期记忆；本轮 PIM 契约修正 | 项目限定 | 2026-06-13 |
 
 ## 6. 待确认事项
 
