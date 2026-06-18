@@ -77,9 +77,10 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
 | claude | ~/.claude/projects/<编码>/<sessionId>.jsonl(文件名=sessionId) | 无                                              | Edit(old_string/new_string)/Write(content) 重建 | 有 uuid     | uuid 或 timestamp |
 - 项目编码：cwd 的 `/` 替换为 `-`。session ID = 文件名 uuid，全程不变。
 
-### 7.4 跨工具 MCP：env 注入差异（关键）
-- cc：子进程注入 `CLAUDE_CODE_SESSION_ID`，MCP/bash 都能 `process.env` 读，MCP 能自动知当前会话。
-- codex：spawn 子进程 `env_clear()`+白名单（codex-rs/core/src/spawn.rs）+ process-hardening 做 env sanitization；MCP 子进程拿不到 codex session id → current_session 降级（list 指认）。
+### 7.4 跨工具 MCP：当前会话 ID 获取（2026-06-18 已修正）
+- cc：子进程注入 `CLAUDE_CODE_SESSION_ID`，MCP/bash 都能 `process.env` 读，自动获取。
+- codex：spawn 子进程确有 `env_clear()`+白名单（env 拿不到），**但 codex 在每次 `tools/call` 时把 session id 放进 `params._meta["x-codex-turn-metadata"].session_id`**（实证 /tmp/sb.log 握手日志）→ MCP 从 `_meta` 读即可自动获取。早期「codex 注定拿不到、需降级 list 指认」结论已证伪（会话 019ed884 修复验证）。
+- 通用做法：`current_session` 探测式，按适配器顺序试每个工具特征（env / _meta key），返回首个命中。
 
 ### 7.5 MCP server 协议硬规则（踩坑：缺 jsonrpc → parse error 死循环洪水）
 - 响应**必须** `{jsonrpc:"2.0", id, result|error}`；缺 `jsonrpc` 字段，client 解析失败 → 互相 parse error → 死循环刷屏（实测 101MB 日志）。
@@ -100,11 +101,13 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
 - `rtk find | rtk head` 管道输出可能被污染(输出 hex 串)；定位文件用 `rtk find` 单跑或 `rtk ls` 逐步。
 - `ls -t` 输出带 size 会污染变量，取文件用 `find`(纯路径)。
 
-### 7.9 session-bridge MCP 落地
-- 代码：`~/.codex/handoff/mcp-server.mjs`(~300 行，零依赖 Node ESM)。工具：list_sessions / read_session(id, source?, since?) / current_session。水位：`~/.codex/handoff/watermark.json` 存 (current,target)→last_ts。
+### 7.9 session-bridge MCP 落地（v0.2.0 适配器化重构后，2026-06-18）
+- **权威源**：`~/.cc-switch/skills/_MCP/handoff/mcp-server.mjs`（~420 行，零依赖 Node ESM）。`~/.codex/handoff/` 是历史遗留死副本，**已删**（db 不引用）。
+- 工具：list_sessions / read_session(id, source?, since?, max_chars?) / current_session。read 默认输出上限 60000 字符（超限截断+提示），max_chars 可覆盖。
+- 水位：`~/.cache/session-bridge/watermark.json`（XDG 运行时目录，首次自动从旧路径迁移，旧文件保留兜底），**不再写源码目录**。
 - 注册：cc-switch.db mcp_servers，id=session-bridge，cc+codex 启用。
-- 验证(cc 侧 2026-06-18)：current/list/read 全量/增量 since 全通；codex 侧已连上、codex→cc 读方向待实测。
-- 调试日志补丁：server 内打 [START]/[RECV]/[SENT] 到 /tmp/sb.log（生产可关）。
+- 调试日志：`SB_DEBUG=1` 才写 /tmp/sb.log（默认关，生产干净）。
+- 验证(2026-06-18)：current/list/read 全量/增量/截断/自动探测 source 全通；协议层 initialize/tools/list/tools/call 正常。
 
 ### 7.10 平台工具 vs agent 工具 + cc 调用链路认知
 > 来源：2026-06-18 本会话 cc-switch.log 实证 + 工具结果"Z.ai Built-in"标记。适用范围：全部会话。状态：有效。最后确认时间：2026-06-18。
@@ -114,3 +117,10 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
   - 平台工具（webReader/web_search_prime，标 `Z.ai Built-in`）：中转平台(Z.ai/智谱)注入，**平台侧执行**，cc-switch 管不到，请求经腾讯云中转。
 - **机制**：模型/平台提供工具是普遍能力（类比 OpenAI web_search/code_interpreter、Gemini grounding、智谱 web_search_prime）——模型生成 tool_call → 平台拦截执行 → 结果注入模型上下文，对 agent 半透明。
 - **隐私偏好（重要）**：涉及公司敏感信息（代码/会话/密钥）的读取，只用本地 MCP（fetch/session-bridge），避开平台 webReader/web_search_prime（经中转）。
+
+### 7.11 session-bridge 适配器化 + 扩展新工具方式（2026-06-18）
+- 架构：source 解析抽成**适配器注册表** `adapters=[codexAdapter, claudeAdapter]`，每个实现 `{ source, find(id,project?), list(project,limit), parse(file), currentSession(env,meta) }`。主干遍历注册表，不 switch source。
+- **加 opencode/pi 等新工具** = 加一个 adapter 对象 + 在 `adapters` push 一行，主干零改动。需先探明该工具：① 会话存储路径+格式（写 parse/find/list）② currentSession 特征（env 变量或 _meta key）。
+- 兼容性分层：MCP 协议层任何客户端(opencode/pi)都能调 list/read 读 cc/codex 会话；读其自身会话需对应 adapter（未实现）。
+- v0.2.0 修复清单：①watermark 迁移 ~/.cache ②删 .codex/handoff 死副本+源目录死 watermark ③调试日志 SB_DEBUG 门控 ④read 体积上限+截断 ⑤list 流式读取(不全量解析) ⑥错误可见化(lastError+console.error) ⑦适配器化重构。
+- 已知：read 大会话时 rtk 包装对大 stdout 处理慢（非 MCP 慢，parse 瞬间完成），直接 MCP 调用不受影响；stdio MCP 改代码需重启/新会话才加载（当前会话挂旧进程）。

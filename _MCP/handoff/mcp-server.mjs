@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 会话读取 MCP server: codex ↔ Claude Code 双向增量上下文同步
-// 工具: list_sessions / read_session(id, source?, since?) / current_session
-// 零依赖 Node ESM。增量锚点用 ISO timestamp(codex 无稳定uuid)。
+// session-bridge MCP: 跨工具会话读取 + 双向增量上下文同步
+// 工具: list_sessions / read_session(id, source?, since?, max_chars?) / current_session
+// 零依赖 Node ESM。适配器化: 加新 agent 工具 = 加一个 adapter + 注册一行。
 import { createInterface } from 'node:readline';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,20 +10,85 @@ import os from 'node:os';
 const HOME = os.homedir();
 const CLAUDE_PROJECTS = path.join(HOME, '.claude', 'projects');
 const CODEX_SESSIONS = path.join(HOME, '.codex', 'sessions');
-const WATERMARK = path.join(HOME, '.codex', 'handoff', 'watermark.json');
+// TODO(性能): codex 有 ~/.codex/session_index.jsonl 索引，字段格式确认后可加速 list；本轮先用流式读取，避免格式猜测。
+
+// 运行时状态目录(XDG 风格)，与源码分离 —— P0-1
+const STATE_DIR = process.env.SB_STATE_DIR || path.join(HOME, '.cache', 'session-bridge');
+const WATERMARK = path.join(STATE_DIR, 'watermark.json');
+const LEGACY_WATERMARK = path.join(HOME, '.codex', 'handoff', 'watermark.json');
+
+const MAX_OUTPUT_CHARS = 60000; // read_session 默认输出上限 —— P1-1
+let lastError = null; // 模块级错误记录，便于排查 —— P1-3
+
+// 调试日志门控: 默认关闭，SB_DEBUG=1 启用 —— P0-3
+const SB_DEBUG = !!process.env.SB_DEBUG;
+const SB_LOG = process.env.SB_DEBUG_LOG || '/tmp/sb.log';
+function dbg(tag, s) { if (SB_DEBUG) { try { fs.appendFileSync(SB_LOG, `[${tag}] ${String(s).slice(0, 300)}\n`); } catch {} } }
 
 const encodeProject = (cwd) => cwd.replace(/\//g, '-');
+
+// ---------- 基础读取 ----------
 function readJsonl(file) {
   if (!fs.existsSync(file)) return [];
   const out = [];
   for (const l of fs.readFileSync(file, 'utf8').split('\n')) {
     if (!l.trim()) continue;
-    try { out.push(JSON.parse(l)); } catch {}
+    try { out.push(JSON.parse(l)); } catch (e) { lastError = `readJsonl parse fail @ ${file}: ${e.message}`; }
   }
   return out;
 }
-const loadWM = () => { try { return JSON.parse(fs.readFileSync(WATERMARK, 'utf8')); } catch { return {}; } };
-function saveWM(wm) { try { fs.mkdirSync(path.dirname(WATERMARK), { recursive: true }); fs.writeFileSync(WATERMARK, JSON.stringify(wm, null, 2)); } catch {} }
+// 流式读 jsonl 前 maxLines 行，命中 predicate(返回 truthy) 即停 —— P1-2: list 不全量读
+function readJsonlUntil(file, maxLines, predicate) {
+  if (!fs.existsSync(file)) return null;
+  let fd;
+  try {
+    fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(65536);
+    let pending = '', lineNo = 0;
+    while (lineNo < maxLines) {
+      const n = fs.readSync(fd, buf, 0, buf.length, null);
+      if (n === 0) {
+        if (pending.trim()) { try { const obj = JSON.parse(pending); const hit = predicate(obj, lineNo); if (hit) return hit; } catch {} }
+        break;
+      }
+      pending += buf.slice(0, n).toString('utf8');
+      const parts = pending.split('\n');
+      pending = parts.pop();
+      for (const l of parts) {
+        if (!l.trim()) continue;
+        lineNo++;
+        try { const obj = JSON.parse(l); const hit = predicate(obj, lineNo); if (hit) return hit; } catch {}
+        if (lineNo >= maxLines) break;
+      }
+    }
+    return null;
+  } catch (e) { lastError = `readJsonlUntil @ ${file}: ${e.message}`; return null; }
+  finally { if (fd) try { fs.closeSync(fd); } catch {} }
+}
+
+// ---------- watermark(含旧路径迁移) ---------- P0-1
+let _migrated = false;
+function migrateLegacyWatermark() {
+  if (_migrated) return;
+  _migrated = true;
+  try {
+    if (!fs.existsSync(WATERMARK) && fs.existsSync(LEGACY_WATERMARK)) {
+      fs.mkdirSync(STATE_DIR, { recursive: true });
+      const old = JSON.parse(fs.readFileSync(LEGACY_WATERMARK, 'utf8'));
+      fs.writeFileSync(WATERMARK, JSON.stringify(old, null, 2));
+      dbg('MIGRATE', `迁移水印 ${Object.keys(old).length} 条 → ${WATERMARK} (旧文件保留)`);
+    }
+  } catch (e) { lastError = `watermark 迁移失败: ${e.message}`; }
+}
+function loadWM() {
+  migrateLegacyWatermark();
+  try { return JSON.parse(fs.readFileSync(WATERMARK, 'utf8')); }
+  catch (e) { lastError = `loadWM fail: ${e.message}`; return {}; }
+}
+function saveWM(wm) {
+  try { fs.mkdirSync(STATE_DIR, { recursive: true }); fs.writeFileSync(WATERMARK, JSON.stringify(wm, null, 2)); }
+  catch (e) { lastError = `saveWM fail: ${e.message}`; console.error(`[session-bridge] saveWM: ${e.message}`); }
+}
 
 // ---------- codex 解析 ----------
 function parseCodex(file) {
@@ -108,26 +173,13 @@ function renderEdit(inp) {
   return `--- ${inp.file_path}\n+++ ${inp.file_path}\n@@ @@\n${o}\n${n}`;
 }
 
-// ---------- 定位/list ----------
+// ---------- 定位/list 通用 ----------
 function findFile(dir, re) {
   if (!fs.existsSync(dir)) return null;
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
     if (ent.isDirectory()) { const r = findFile(p, re); if (r) return r; }
     else if (re.test(p)) return p;
-  }
-  return null;
-}
-const findCodexFile = (id) => findFile(CODEX_SESSIONS, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-function findClaudeFile(id, project) {
-  const tryDirs = project ? [path.join(CLAUDE_PROJECTS, encodeProject(project)), CLAUDE_PROJECTS] : [CLAUDE_PROJECTS];
-  for (const d of tryDirs) {
-    if (!fs.existsSync(d)) continue;
-    const direct = path.join(d, id + '.jsonl');
-    if (fs.existsSync(direct)) return direct;
-    for (const ent of fs.readdirSync(d, { withFileTypes: true })) {
-      if (ent.isDirectory()) { const f = path.join(d, ent.name, id + '.jsonl'); if (fs.existsSync(f)) return f; }
-    }
   }
   return null;
 }
@@ -140,44 +192,87 @@ function listFilesDeep(dir, ext, out = []) {
   }
   return out;
 }
-function listCodexSessions(project, limit) {
-  const out = [];
-  for (const f of listFilesDeep(CODEX_SESSIONS, '.jsonl')) {
-    const rows = readJsonl(f);
-    const sm = rows.find(r => r.type === 'session_meta');
-    if (!sm) continue;
-    const cwd = sm.payload?.cwd;
-    if (project && cwd !== project) continue;
-    const sid = sm.payload?.id || path.basename(f).match(/([0-9a-f-]{36})/)?.[1];
-    const firstUser = rows.find(r => r.type === 'event_msg' && r.payload?.type === 'user_message');
-    out.push({ id: sid, source: 'codex', cwd, ts: sm.timestamp, summary: (firstUser?.payload?.message || '').slice(0, 80), file: f, size: fs.statSync(f).size });
-  }
-  out.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
-  return out.slice(0, limit || 50);
-}
-function listClaudeSessions(project, limit) {
-  const dirs = project && fs.existsSync(path.join(CLAUDE_PROJECTS, encodeProject(project)))
-    ? [path.join(CLAUDE_PROJECTS, encodeProject(project))]
-    : (fs.existsSync(CLAUDE_PROJECTS) ? fs.readdirSync(CLAUDE_PROJECTS, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => path.join(CLAUDE_PROJECTS, d.name)) : []);
-  const out = [];
-  for (const d of dirs) {
-    for (const ent of fs.readdirSync(d, { withFileTypes: true })) {
-      if (!ent.isFile() || !ent.name.endsWith('.jsonl')) continue;
-      const f = path.join(d, ent.name);
-      const rows = readJsonl(f);
-      const first = rows.find(r => r.timestamp);
-      const firstUser = rows.find(r => r.type === 'user');
-      let summary = '';
-      if (firstUser) {
-        const c = firstUser.message?.content;
-        summary = (Array.isArray(c) ? (c.find(x => x.type === 'text') || {}).text : c) || '';
-      }
-      out.push({ id: path.basename(f, '.jsonl'), source: 'claude', cwd: firstUser?.cwd, ts: first?.timestamp, summary: String(summary).slice(0, 80), file: f, size: fs.statSync(f).size });
+
+// ---------- codex 适配器 ----------
+const codexAdapter = {
+  source: 'codex',
+  find(id) { return findFile(CODEX_SESSIONS, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))); },
+  parse: parseCodex,
+  currentSession(env, meta) {
+    const cm = meta?.['x-codex-turn-metadata'];
+    const cid = cm?.session_id || cm?.thread_id;
+    return cid ? { source: 'codex', id: cid, note: 'from x-codex-turn-metadata' } : null;
+  },
+  list(project, limit) {
+    const out = [];
+    for (const f of listFilesDeep(CODEX_SESSIONS, '.jsonl')) {
+      const sm = readJsonlUntil(f, 8, r => r.type === 'session_meta' ? r : null);
+      if (!sm) continue;
+      const cwd = sm.payload?.cwd;
+      if (project && cwd !== project) continue;
+      const sid = sm.payload?.id || path.basename(f).match(/([0-9a-f-]{36})/)?.[1];
+      const firstUser = readJsonlUntil(f, 200, r => (r.type === 'event_msg' && r.payload?.type === 'user_message') ? r : null);
+      out.push({ id: sid, source: 'codex', cwd, ts: sm.timestamp, summary: (firstUser?.payload?.message || '').slice(0, 80), file: f, size: fs.statSync(f).size });
     }
-  }
-  out.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
-  return out.slice(0, limit || 50);
-}
+    out.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
+    return out.slice(0, limit || 50);
+  },
+};
+
+// ---------- claude 适配器 ----------
+const claudeAdapter = {
+  source: 'claude',
+  find(id, project) {
+    const tryDirs = project ? [path.join(CLAUDE_PROJECTS, encodeProject(project)), CLAUDE_PROJECTS] : [CLAUDE_PROJECTS];
+    for (const d of tryDirs) {
+      if (!fs.existsSync(d)) continue;
+      const direct = path.join(d, id + '.jsonl');
+      if (fs.existsSync(direct)) return direct;
+      for (const ent of fs.readdirSync(d, { withFileTypes: true })) {
+        if (ent.isDirectory()) { const f = path.join(d, ent.name, id + '.jsonl'); if (fs.existsSync(f)) return f; }
+      }
+    }
+    return null;
+  },
+  parse: parseClaude,
+  currentSession(env) {
+    const id = env.CLAUDE_CODE_SESSION_ID;
+    return id ? { source: 'claude', id, note: 'from CLAUDE_CODE_SESSION_ID env' } : null;
+  },
+  list(project, limit) {
+    const dirs = project && fs.existsSync(path.join(CLAUDE_PROJECTS, encodeProject(project)))
+      ? [path.join(CLAUDE_PROJECTS, encodeProject(project))]
+      : (fs.existsSync(CLAUDE_PROJECTS) ? fs.readdirSync(CLAUDE_PROJECTS, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => path.join(CLAUDE_PROJECTS, d.name)) : []);
+    const out = [];
+    for (const d of dirs) {
+      for (const ent of fs.readdirSync(d, { withFileTypes: true })) {
+        if (!ent.isFile() || !ent.name.endsWith('.jsonl')) continue;
+        const f = path.join(d, ent.name);
+        const st = fs.statSync(f);
+        const firstUser = readJsonlUntil(f, 60, r => (r.type === 'user' && !r.isSidechain) ? r : null);
+        let summary = '', cwd = null;
+        if (firstUser) {
+          const c = firstUser.message?.content;
+          summary = (Array.isArray(c) ? (c.find(x => x.type === 'text') || {}).text : c) || '';
+          cwd = firstUser.cwd;
+        }
+        out.push({ id: path.basename(f, '.jsonl'), source: 'claude', cwd, ts: firstUser?.timestamp || st.mtime.toISOString(), summary: String(summary).slice(0, 80), file: f, size: st.size });
+      }
+    }
+    out.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
+    return out.slice(0, limit || 50);
+  },
+};
+
+// ---------- 适配器注册表 ---------- 结构性重构
+// 加新工具(opencode/pi 等) = 在此 push 一个 adapter 对象 { source, find, parse, currentSession, list }，主干零改动。
+const adapters = [
+  codexAdapter,
+  claudeAdapter,
+  // adapter: opencode  (会话格式待探明后实现)
+  // adapter: pi        (同上)
+];
+const adapterBySource = (source) => adapters.find(a => a.source === source);
 
 // ---------- 渲染 ----------
 function briefArgs(name, args) {
@@ -186,37 +281,50 @@ function briefArgs(name, args) {
   if (['Edit', 'Write', 'apply_patch', 'update_plan'].includes(name)) return args.file_path || args.path || '';
   return JSON.stringify(args).slice(0, 120);
 }
-function render({ meta, msgs, files }, since) {
+function renderMsgBlock(m) {
+  const tag = m.role === 'tool' ? `tool:${m.name}` : m.role;
+  const lines = [`### [${m.ts}] ${tag}`];
+  if (m.role === 'tool') {
+    lines.push(`**${m.name}** ${briefArgs(m.name, m.args)}`);
+    if (m.isError) lines.push(`> ERROR: ${String(m.result || '').slice(0, 1500)}`);
+  } else {
+    lines.push(m.text || '');
+  }
+  return lines.join('\n');
+}
+function render({ meta, msgs, files }, since, maxChars) { // P1-1: 体积上限 + 截断
+  const limit = maxChars || MAX_OUTPUT_CHARS;
   const L = [];
-  L.push(`# Session ${meta.sessionId || '?'}  (source=${meta.source})`);
-  if (meta.cwd) L.push(`- cwd: ${meta.cwd}`);
-  if (meta.git) L.push(`- git: ${JSON.stringify(meta.git)}`);
-  if (meta.tsRange[0]) L.push(`- time: ${meta.tsRange[0]} → ${meta.tsRange[1]}`);
-  if (since) L.push(`- **incremental since: ${since}** (只含此时间之后)`);
-  L.push(`- messages: ${msgs.length}, files changed: ${files.length}`);
-  L.push('');
+  let len = 0;
+  const push = (s) => { L.push(s); len += s.length + 1; return len <= limit; };
+  push(`# Session ${meta.sessionId || '?'}  (source=${meta.source})`);
+  if (meta.cwd) push(`- cwd: ${meta.cwd}`);
+  if (meta.git) push(`- git: ${JSON.stringify(meta.git)}`);
+  if (meta.tsRange[0]) push(`- time: ${meta.tsRange[0]} → ${meta.tsRange[1]}`);
+  if (since) push(`- **incremental since: ${since}** (只含此时间之后)`);
+  push(`- messages: ${msgs.length}, files changed: ${files.length}`);
+  push('');
+  let shown = 0, truncated = false;
   if (msgs.length) {
-    L.push('## Messages');
+    push('## Messages');
     for (const m of msgs) {
-      const tag = m.role === 'tool' ? `tool:${m.name}` : m.role;
-      L.push(`### [${m.ts}] ${tag}`);
-      if (m.role === 'tool') {
-        L.push(`**${m.name}** ${briefArgs(m.name, m.args)}`);
-        if (m.isError) L.push(`> ERROR: ${String(m.result || '').slice(0, 1500)}`);
-      } else {
-        L.push(m.text || '');
-      }
-      L.push('');
+      const block = renderMsgBlock(m);
+      if (len + block.length + 1 > limit) { truncated = true; break; }
+      push(block);
+      shown++;
     }
   } else {
-    L.push('_(无新增消息)_');
+    push('_(无新增消息)_');
   }
-  if (files.length) {
-    L.push('## Files Changed');
+  if (truncated) {
+    push(`\n…[truncated: 共 ${msgs.length} 条消息，已显示前 ${shown} 条；可用 since 增量或缩小范围，或加大 max_chars]`);
+  } else if (files.length) {
+    push('## Files Changed');
     for (const f of files) {
-      L.push(`### ${f.path} (${f.type})`);
-      if (f.diff) L.push('```diff\n' + f.diff + '\n```');
-      else if (f.content != null) L.push('```\n' + String(f.content).slice(0, 4000) + '\n```');
+      const body = f.diff ? ('```diff\n' + f.diff + '\n```') : (f.content != null ? ('```\n' + String(f.content).slice(0, 4000) + '\n```') : '');
+      const block = `### ${f.path} (${f.type})\n${body}`;
+      if (len + block.length + 1 > limit) { push(`\n…[files 段已截断，共 ${files.length} 个]`); break; }
+      push(block);
     }
   }
   return L.join('\n');
@@ -226,20 +334,23 @@ function render({ meta, msgs, files }, since) {
 function tool_list_sessions({ source, project, limit }) {
   limit = limit || 20;
   let out = [];
-  if (!source || source === 'codex') out = out.concat(listCodexSessions(project, limit));
-  if (!source || source === 'claude') out = out.concat(listClaudeSessions(project, limit));
+  for (const a of adapters) {
+    if (source && a.source !== source) continue;
+    try { out = out.concat(a.list(project, limit)); } catch (e) { lastError = `list ${a.source} fail: ${e.message}`; }
+  }
   out.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
   return out.slice(0, limit).map(o => ({ id: o.id, source: o.source, cwd: o.cwd, ts: o.ts, summary: (o.summary || '').replace(/\n/g, ' ').slice(0, 80), sizeK: Math.round((o.size || 0) / 1024) }));
 }
-function tool_read_session({ id, source, since }) {
-  let file = null, parsed = null;
-  if (source === 'codex') { file = findCodexFile(id); parsed = file && parseCodex(file); }
-  else if (source === 'claude') { file = findClaudeFile(id); parsed = file && parseClaude(file); }
-  else {
-    file = findClaudeFile(id); if (file) { source = 'claude'; parsed = parseClaude(file); }
-    else { file = findCodexFile(id); if (file) { source = 'codex'; parsed = parseCodex(file); } }
+function tool_read_session({ id, source, since, max_chars }) {
+  let adapter = source ? adapterBySource(source) : null, file = null;
+  if (!adapter) { // 自动探测: 按注册表顺序找首个命中的文件
+    for (const a of adapters) { const f = a.find(id); if (f) { adapter = a; file = f; break; } }
+  } else {
+    file = adapter.find(id);
   }
-  if (!parsed) return { error: 'session not found: ' + id };
+  if (!adapter || !file) return { error: 'session not found: ' + id };
+  const parsed = adapter.parse(file);
+  parsed.meta.source = adapter.source;
   let msgs = parsed.msgs, files = parsed.files;
   if (since) {
     msgs = msgs.filter(m => m.ts && m.ts > since);
@@ -250,27 +361,28 @@ function tool_read_session({ id, source, since }) {
   if (cur && parsed.meta.sessionId && lastTs) {
     const wm = loadWM(); wm[`${cur}:${parsed.meta.sessionId}`] = lastTs; saveWM(wm);
   }
-  const text = render({ meta: parsed.meta, msgs, files }, since);
-  return { content: [{ type: 'text', text }], session_id: parsed.meta.sessionId, source, returned: msgs.length, last_ts: lastTs };
+  const text = render({ meta: parsed.meta, msgs, files }, since, max_chars);
+  return { content: [{ type: 'text', text }], session_id: parsed.meta.sessionId, source: adapter.source, returned: msgs.length, last_ts: lastTs };
 }
-function tool_current_session(args = {}) {
-  const id = process.env.CLAUDE_CODE_SESSION_ID;
-  if (id) return { source: 'claude', id, note: 'from CLAUDE_CODE_SESSION_ID env' };
-  const codexMeta = args._meta?.['x-codex-turn-metadata'];
-  const codexId = codexMeta?.session_id || codexMeta?.thread_id;
-  if (codexId) return { source: 'codex', id: codexId, note: 'from x-codex-turn-metadata' };
-  return { source: 'unknown', id: null, note: '未收到 Claude 环境变量或 Codex turn metadata，请用 list_sessions 指认' };
+function tool_current_session(args = {}) { // 探测式: 遍历适配器，返回首个命中
+  for (const a of adapters) {
+    try {
+      const r = a.currentSession(process.env, args._meta);
+      if (r) return r;
+    } catch (e) { lastError = `currentSession ${a.source} fail: ${e.message}`; }
+  }
+  return { source: 'unknown', id: null, note: '未识别调用方会话(Claude 环境变量 / Codex turn metadata 均未命中)，请用 list_sessions 指认' };
 }
 
 // ---------- MCP 协议 ----------
 const tools = [
   { name: 'list_sessions', description: '列出 codex/claude 会话(id+摘要+时间+项目)，供指认要继承的会话', inputSchema: { type: 'object', properties: { source: { enum: ['codex', 'claude'] }, project: { type: 'string', description: '按项目 cwd 过滤' }, limit: { type: 'number' } } } },
-  { name: 'read_session', description: '读取指定会话内容；since=ISO timestamp 则只返回该时间之后的消息(增量)', inputSchema: { type: 'object', properties: { id: { type: 'string' }, source: { enum: ['codex', 'claude'] }, since: { type: 'string', description: 'ISO timestamp，增量起点' } }, required: ['id'] } },
+  { name: 'read_session', description: '读取指定会话内容；since=ISO timestamp 则只返回该时间之后的消息(增量)；max_chars 控制输出上限(默认60000)', inputSchema: { type: 'object', properties: { id: { type: 'string' }, source: { enum: ['codex', 'claude'] }, since: { type: 'string', description: 'ISO timestamp，增量起点' }, max_chars: { type: 'number', description: '输出字符上限' } }, required: ['id'] } },
   { name: 'current_session', description: '返回当前调用方会话ID(ClaudeCode 读环境变量; Codex 读 turn metadata)', inputSchema: { type: 'object', properties: {} } },
 ];
 async function handle(req) {
   const { id, method, params } = req;
-  if (method === 'initialize') return { id, result: { protocolVersion: (params && params.protocolVersion) || '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: 'session-bridge', version: '0.1.0' } } };
+  if (method === 'initialize') return { id, result: { protocolVersion: (params && params.protocolVersion) || '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: 'session-bridge', version: '0.2.0' } } };
   if (method === 'notifications/initialized') return null;
   if (method === 'tools/list') return { id, result: { tools } };
   if (method === 'tools/call') {
@@ -289,15 +401,16 @@ async function handle(req) {
   }
   return { id, error: { code: -32601, message: 'unknown method ' + method } };
 }
-try{fs.appendFileSync("/tmp/sb.log","\n[START] "+new Date().toISOString()+" pid="+process.pid+" exec="+process.execPath+" argv="+JSON.stringify(process.argv)+"\n");}catch(e){}
+
+dbg('START', `pid=${process.pid} exec=${process.execPath} argv=${JSON.stringify(process.argv)}`);
 const rl = createInterface({ input: process.stdin, terminal: false });
 rl.on('line', (line) => {
-  try{fs.appendFileSync('/tmp/sb.log','[RECV] '+line.slice(0,300)+'\n');}catch(e){}
+  dbg('RECV', line);
   if (!line.trim()) return;
   let req; try { req = JSON.parse(line); } catch { return; }
   const res = handle(req);
-  if (res && res.then) res.then(r => { if (r){const __o={jsonrpc:'2.0',...r};try{fs.appendFileSync('/tmp/sb.log','[SENT] '+JSON.stringify(__o).slice(0,200)+'\n');}catch(e){}process.stdout.write(JSON.stringify(__o)+'\n');} });
-  else if (res){const __o={jsonrpc:'2.0',...res};try{fs.appendFileSync('/tmp/sb.log','[SENT] '+JSON.stringify(__o).slice(0,200)+'\n');}catch(e){}process.stdout.write(JSON.stringify(__o)+'\n');}
+  if (res && res.then) res.then(r => { if (r) { dbg('SENT', JSON.stringify(r)); process.stdout.write(JSON.stringify({ jsonrpc: '2.0', ...r }) + '\n'); } });
+  else if (res) { dbg('SENT', JSON.stringify(res)); process.stdout.write(JSON.stringify({ jsonrpc: '2.0', ...res }) + '\n'); }
 });
 
 // 命令行测试入口
