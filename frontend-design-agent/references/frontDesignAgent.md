@@ -19,7 +19,7 @@ FrontDesignAgent 的目标不是生成“看起来完整”的前端设计文档
 | ------------------------------------------- | ---------------------------------------------- |
 | 文档多且重叠，事实源漂移                    | 收敛为中文业务产物和单一事实源                 |
 | 设计描述抽象，AI 写不出代码                 | 增加 `code-reference.md` 和可粘贴代码骨架            |
-| 接口散落在多个文件                          | `api-contract.md` 成为接口契约唯一事实源           |
+| 接口散落在多个文件                          | `api-contract.md` 成为前端工作流内接口契约唯一事实源           |
 | 任务太大，无法直接执行                      | `implementation-tasks.md` 控制到 2-5 分钟粒度              |
 | PRD、UI、原型冲突没有承接点                 | 第一轮用模块切片和 `review-notes.md` 支持人工审查  |
 | MasterGo 链接只被记录，缺少真实 UI Evidence | 检测到链接必须优先尝试 `mcp__getComponentGenerator`，必要时补充 `mcp__getDsl` |
@@ -46,7 +46,7 @@ mode_select
 | `module-index.md` | Manifest 单一入口源：模块 ID、路径、状态、接口 ID 索引和审查状态   |
 | `requirements-detail.md` | 需求事实：模块、字段、权限、验收标准和澄清记录                     |
 | `code-reference.md` | 代码模式：API 签名、真实范例、注意事项                             |
-| `api-contract.md` | 接口契约总账：接口 ID、method、path、请求/响应、错误码、权限、状态 |
+| `api-contract.md` | 接口契约总账（前端工作副本，团队单一源为 YApi）：接口 ID、method、path、请求/响应、错误码、权限、状态 |
 | `frontend-design.md` | 模块实现方案：引用代码参考和接口 ID，给出文件与代码骨架            |
 | `implementation-tasks.md` | 实现 Agent 执行入口：任务 ID、依赖、验收断言、验证命令、停止条件   |
 

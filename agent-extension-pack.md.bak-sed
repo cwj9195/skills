@@ -17,7 +17,6 @@
 | §8  | session-bridge MCP（8.1–8.7） | 跨工具会话读取、检索历史对话、grep 检索法 |
 | §9  | rtk / shell 操作经验          | 写文件、管道污染、定位文件                |
 | §10 | 工具链路与平台认知            | 平台工具 vs agent 工具、敏感信息读取      |
-| §11 | hook 强制机制（输出模板守护） | 漏模板自纠/Stop hook/_HOOKS 单一源 |
 
 ## 0. 维护规则
 
@@ -51,7 +50,6 @@
 | 基础包过大会增加每轮上下文负担。                   | 基础包只保留硬规则；丰富偏好、踩坑经验和项目索引放拓展包，按需读取。 | 用户粘贴的 Istishia 评论；微信文章正文            | 全局 agent 记忆管理 | 有效 | 2026-06-12   |
 | 把一次性偏好写进长期规则，会污染后续会话。         | 写入前检查是否满足写入准入标准；不满足时只在当前任务内遵守。         | 微信文章正文；用户粘贴的 Istishia 评论            | 长期记忆维护        | 有效 | 2026-06-12   |
 | 只靠新会话临时说明，会导致偏好和踩坑经验反复丢失。 | 将稳定经验沉淀为可读取文件，并从基础包引用。                         | 微信文章正文《一个让Codex变得越来越聪明的小方法》 | 全局 agent 记忆管理 | 有效 | 2026-06-12   |
-| cc 有 auto-memory（MEMORY.md+memory/*.md，每会话按 description 自动注入）；codex 无此机制（仅 AGENTS.md 全量指令+notify）。故长期记忆主载体=拓展包（跨工具）；memory 指针仅 cc 可见（codex 读不到 ~/.claude/projects/.../memory/）。跨工具通用经验→拓展包；仅 cc 项目快捷指针→memory。 | 2026-06-20 本会话机制梳理 | 全局 agent 记忆管理 | 有效 | 2026-06-20 |
 
 ## 4. 工作流补充
 
@@ -159,32 +157,3 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
   - 平台工具（webReader/web_search_prime，标 `Z.ai Built-in`）：中转平台(Z.ai/智谱)注入，**平台侧执行**，cc-switch 管不到，请求经腾讯云中转。
 - **机制**：模型/平台提供工具是普遍能力（类比 OpenAI web_search/code_interpreter、Gemini grounding、智谱 web_search_prime）——模型生成 tool_call → 平台拦截执行 → 结果注入模型上下文，对 agent 半透明。
 - **隐私偏好（重要）**：涉及公司敏感信息（代码/会话/密钥）的读取，只用本地 MCP（fetch/session-bridge），避开平台 webReader/web_search_prime（经中转）。
-
-
-## 11. hook 强制机制（输出模板守护，2026-06-20）
-> 来源：2026-06-20 本会话落地 _HOOKS 单一源。适用范围：cc/codex 输出规则强制、hook 配置。状态：配置完成待实测。最后确认时间：2026-06-20。
-
-### 问题
-输出模板（agent.md 三件套）是规则驱动，密集技术操作时 agent 自检失效（§2 已记：连续 5 轮漏主人，靠用户指出）。规则驱动 ≠ 可靠必达。
-
-### 机制：hooks（harness 级强制，不经过 agent 注意力）
-cc/codex 都有 Stop 事件，exit 2 阻断让 agent 补齐。脚本检查最后 assistant 文本是否含三件套（主人/本轮使用/结束报告），缺则 exit 2。
-
-### 单一源落地（同 _MCP 模式）
-- 脚本：`~/.cc-switch/skills/_HOOKS/check-template.sh` 一份，两端指向。
-- cc：`~/.claude/settings.json` 的 `hooks.Stop[].command`（全局，所有项目）。
-- codex：`~/.codex/config.toml` 的 `[[hooks]] event="Stop" command="..."`。
-
-### 脚本兼容两端格式
-- cc：`.message.content[].text`（stdin=transcript_path）。
-- codex：`.payload.content[].text // .output_text`（content block type=output_text 非 text；参考 session-bridge mcp-server.mjs:119）。
-- 防护：无 jq/无 transcript/取不到 text/stop_hook_active=true → 放行（最坏不拦，不误伤）。
-
-### 关键风险与结论
-- **codex #17532**：hooks 在交互式会话不触发（已知 bug）。用户用 Codex.app 交互式 → codex 侧可能不生效，回退用户监督。两端不对等（cc 可阻断，codex 可能无效）。
-- **codex stdin 字段未实测**：脚本容错试 transcript_path/transcript/session_transcript，实际字段待 codex 实测。
-- **cc-switch 不可扩展管 hooks**：同步逻辑在 CC Switch.app 闭源内，~/.cc-switch 无脚本，db 无 hooks 表（有 mcp_servers/providers/skills/prompts 等）。降级为脚本单一源。
-
-### 状态
-- cc：配置完成，新会话验证（未实测生效）。
-- codex：配置完成，#17532 + stdin 待实测（可能无效）。

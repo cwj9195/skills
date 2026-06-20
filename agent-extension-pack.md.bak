@@ -4,20 +4,16 @@
 
 ## 目录
 
-| 节  | 主题                          | 触发场景                                  |
-| --- | ----------------------------- | ----------------------------------------- |
-| §0  | 维护规则与写入准入            | 改拓展包前、判断能否写入                  |
-| §1  | 写入模式（确认后/强制/周期）  | 判断是否该沉淀长期记忆                    |
-| §2  | 长期偏好补充                  | 称呼缺失、结束报告字段争议                |
-| §3  | 记忆体系维护经验              | 基础包体积、一次性偏好污染、索引自包含    |
-| §4  | 工作流补充                    | 改 skills/MCP 源、工作树改动              |
-| §5  | 项目规则索引                  | 进入 web-base 等已索引项目                |
-| §6  | 待确认事项                    | 自动化提炼、多端同步                      |
-| §7  | MCP 开发通用经验（7.1–7.3）   | 写 MCP、协议坑、cc-switch 管理、node 路径 |
-| §8  | session-bridge MCP（8.1–8.7） | 跨工具会话读取、检索历史对话、grep 检索法 |
-| §9  | rtk / shell 操作经验          | 写文件、管道污染、定位文件                |
-| §10 | 工具链路与平台认知            | 平台工具 vs agent 工具、敏感信息读取      |
-| §11 | hook 强制机制（输出模板守护） | 漏模板自纠/Stop hook/_HOOKS 单一源 |
+| 节  | 主题                           | 触发场景                                  |
+| --- | ------------------------------ | ----------------------------------------- |
+| §0  | 维护规则与写入准入             | 改拓展包前、判断能否写入                  |
+| §1  | 写入模式（确认后/强制/周期）   | 判断是否该沉淀长期记忆                    |
+| §2  | 长期偏好补充                   | 称呼缺失、结束报告字段争议                |
+| §3  | 经验沉淀                       | 基础包体积、一次性偏好污染                |
+| §4  | 工作流补充                     | 改 skills/MCP 源、工作树改动              |
+| §5  | 项目规则索引                   | 进入 web-base 等已索引项目                |
+| §6  | 待确认事项                     | 自动化提炼、多端同步                      |
+| §7  | session-bridge MCP（7.1–7.12） | 跨工具会话读取、检索历史对话、grep 检索法 |
 
 ## 0. 维护规则
 
@@ -42,16 +38,14 @@
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------- | ---- | ------------ |
 | 用“主人”作为基础包加载偏离的可见信号；如果称呼缺失，应优先检查基础包是否被读取。                     | 用户粘贴的 Istishia 评论；会话确认                 | 全部会话 | 有效 | 2026-06-12   |
 | 结束报告除完成内容与验证结果外，应包含风险、Regression Check、Defensive Code、是否建议沉淀长期记忆。 | `/Users/amoy/.cc-switch/skills/agent.md`；会话确认 | 全部会话 | 有效 | 2026-06-12   |
-| 称呼缺失信号**主要服务用户外部监督**，非 agent 可靠自检器。2026-06-20 实证：连续 5 轮漏叫主人时 agent 未依本条自纠，由用户指出才纠正。根因（悖论）：要求"会漏规则的 agent"自检"漏规则"，自检这步也会漏；注意力被技术任务占满时规则自检随之失效。可靠纠正=用户反馈闭环；harness 级强制 > 规则驱动。 | 本会话实证 | 全部会话 | 有效 | 2026-06-20 |
 
-## 3. 记忆体系维护经验
+## 3. 经验沉淀
 
 | 经验                                               | 正确做法                                                             | 来源                                              | 适用范围            | 状态 | 最后确认时间 |
 | -------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------- | ------------------- | ---- | ------------ |
 | 基础包过大会增加每轮上下文负担。                   | 基础包只保留硬规则；丰富偏好、踩坑经验和项目索引放拓展包，按需读取。 | 用户粘贴的 Istishia 评论；微信文章正文            | 全局 agent 记忆管理 | 有效 | 2026-06-12   |
 | 把一次性偏好写进长期规则，会污染后续会话。         | 写入前检查是否满足写入准入标准；不满足时只在当前任务内遵守。         | 微信文章正文；用户粘贴的 Istishia 评论            | 长期记忆维护        | 有效 | 2026-06-12   |
 | 只靠新会话临时说明，会导致偏好和踩坑经验反复丢失。 | 将稳定经验沉淀为可读取文件，并从基础包引用。                         | 微信文章正文《一个让Codex变得越来越聪明的小方法》 | 全局 agent 记忆管理 | 有效 | 2026-06-12   |
-| cc 有 auto-memory（MEMORY.md+memory/*.md，每会话按 description 自动注入）；codex 无此机制（仅 AGENTS.md 全量指令+notify）。故长期记忆主载体=拓展包（跨工具）；memory 指针仅 cc 可见（codex 读不到 ~/.claude/projects/.../memory/）。跨工具通用经验→拓展包；仅 cc 项目快捷指针→memory。 | 2026-06-20 本会话机制梳理 | 全局 agent 记忆管理 | 有效 | 2026-06-20 |
 
 ## 4. 工作流补充
 
@@ -77,49 +71,50 @@
 | 是否需要自动化脚本定期从 Codex `sessions/`、`logs_2.sqlite`、`session_index.jsonl` 提炼拓展包候选项。 | 待确认   | 另起设计，不在当前拓展包精简中实现。 |
 | 是否需要把拓展包同步到 Claude、Gemini、OpenCode 等其他客户端入口。                                    | 待确认   | 观察 Codex 全局入口效果后再决定。    |
 
-## 7. MCP 开发通用经验
+## 7. session-bridge MCP 与跨工具会话续传经验
 
-> 来源：2026-06-18 session-bridge MCP 开发过程沉淀。适用范围：所有本地 MCP 开发、cc-switch 维护。状态：有效。最后确认时间：2026-06-18。
+> 来源：2026-06-18 实现 session-bridge MCP 全过程。适用范围：跨工具 MCP 开发、cc-switch 维护、会话读取。状态：有效。最后确认时间：2026-06-18。
 
-### 7.1 MCP server 协议硬规则（踩坑：缺 jsonrpc → parse error 死循环洪水）
-- 响应**必须** `{jsonrpc:"2.0", id, result|error}`；缺 `jsonrpc` 字段，client 解析失败 → 互相 parse error → 死循环刷屏（实测 101MB 日志）。
-- initialize 的 protocolVersion **协商**：返回 client 发的版本（codex 要 2025-06-18，不能硬编码 2024-11-05）。
-- stdio 传输 = line-delimited JSON（newline 分隔），不是 LSP 的 Content-Length。
-
-### 7.2 cc-switch 的 MCP 管理（源信息 = cc-switch.db）
-- `~/.cc-switch/cc-switch.db` 的 `mcp_servers` 表(id/name/server_config/enabled_claude/enabled_codex/...) 是 MCP 源信息。改 MCP 只改它，不改 .claude.json/codex config.toml。
-- 同步机制：启动时全量 db→配置；运行中 `enabled_*` 字段有 watcher 实时同步；`server_config`(command/args) 改动**不实时同步**，需重启 cc-switch。
-- cc-switch 是 GUI app(CC Switch.app) 且代理接管 claude(127.0.0.1:15721)，重启会短暂断 cc 连接。
-
-### 7.3 node 路径避 GUI PATH 坑
-- nvm node(~/.nvm/versions/node/vX/bin/node) 只在交互 shell PATH；GUI app(cc-switch) spawn 子进程的 PATH 可能不含。
-- MCP server_config 的 command 优先用 node 全路径（不依赖 PATH）。cc(VSCode 扩展)/codex 实测 PATH 含 node；cc-switch GUI 测试连接可能用 GUI PATH 报超时。
-
-## 8. session-bridge MCP 与会话续传
-
-> 来源：2026-06-18 实现全过程 + 2026-06-20 检索经验。适用范围：跨工具会话读取、检索历史对话。状态：有效。最后确认时间：2026-06-20。
-
-### 8.1 概念区分（避免混淆）
+### 7.1 概念区分（避免混淆）
 - 微信《AI Agent Handoff》的 Handoff = 多 Agent 协作**任务移交**（上下文隔离/分发回收/同框架同协议）。
 - 主人需求 = 跨工具**会话续传**（上下文继承/增量/回原会话/跨厂商）——方向相反，不能套同一框架。
 - session vs turn：一个对话框多次聊天，session ID 全程不变（=那份 transcript 文件），每 turn 各自内部 id；上下文连续=每轮重喂整份 session；交接=搬整份 session（用 session id 定位）。
 
-### 8.2 现成工具调研结论（都是「导出→开新会话 resume」，做不到回原会话增量补）
+### 7.2 现成工具调研结论（都是「导出→开新会话 resume」，做不到回原会话增量补）
 cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrator(10,**CC-BY-SA 协议，公司项目慎用**)。故自建 session-bridge（会话内给 ID 读取 + since 增量 + 回原会话）。
 
-### 8.3 codex/claude 会话存储格式（session-bridge 解析依据）
+### 7.3 codex/claude 会话存储格式（session-bridge 解析依据）
 | 工具   | 路径                                                          | 索引                                            | 文件 diff 源                                    | 消息 uuid   | 增量锚点          |
 | ------ | ------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------- | ----------- | ----------------- |
 | codex  | ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl                  | session_index.jsonl(thread_name/cwd/updated_at) | event_msg.patch_apply_end.unified_diff          | 无稳定 uuid | timestamp         |
 | claude | ~/.claude/projects/<编码>/<sessionId>.jsonl(文件名=sessionId) | 无                                              | Edit(old_string/new_string)/Write(content) 重建 | 有 uuid     | uuid 或 timestamp |
 - 项目编码：cwd 的 `/` 替换为 `-`。session ID = 文件名 uuid，全程不变。
 
-### 8.4 跨工具 MCP：当前会话 ID 获取（2026-06-18 已修正）
+### 7.4 跨工具 MCP：当前会话 ID 获取（2026-06-18 已修正）
 - cc：子进程注入 `CLAUDE_CODE_SESSION_ID`，MCP/bash 都能 `process.env` 读，自动获取。
 - codex：spawn 子进程确有 `env_clear()`+白名单（env 拿不到），**但 codex 在每次 `tools/call` 时把 session id 放进 `params._meta["x-codex-turn-metadata"].session_id`**（实证 /tmp/sb.log 握手日志）→ MCP 从 `_meta` 读即可自动获取。早期「codex 注定拿不到、需降级 list 指认」结论已证伪（会话 019ed884 修复验证）。
 - 通用做法：`current_session` 探测式，按适配器顺序试每个工具特征（env / _meta key），返回首个命中。
 
-### 8.5 session-bridge MCP 落地（v0.2.0 适配器化重构后，2026-06-18）
+### 7.5 MCP server 协议硬规则（踩坑：缺 jsonrpc → parse error 死循环洪水）
+- 响应**必须** `{jsonrpc:"2.0", id, result|error}`；缺 `jsonrpc` 字段，client 解析失败 → 互相 parse error → 死循环刷屏（实测 101MB 日志）。
+- initialize 的 protocolVersion **协商**：返回 client 发的版本（codex 要 2025-06-18，不能硬编码 2024-11-05）。
+- stdio 传输 = line-delimited JSON（newline 分隔），不是 LSP 的 Content-Length。
+
+### 7.6 cc-switch 的 MCP 管理（源信息 = cc-switch.db）
+- `~/.cc-switch/cc-switch.db` 的 `mcp_servers` 表(id/name/server_config/enabled_claude/enabled_codex/...) 是 MCP 源信息。改 MCP 只改它，不改 .claude.json/codex config.toml。
+- 同步机制：启动时全量 db→配置；运行中 `enabled_*` 字段有 watcher 实时同步；`server_config`(command/args) 改动**不实时同步**，需重启 cc-switch。
+- cc-switch 是 GUI app(CC Switch.app) 且代理接管 claude(127.0.0.1:15721)，重启会短暂断 cc 连接。
+
+### 7.7 node 路径避 GUI PATH 坑
+- nvm node(~/.nvm/versions/node/vX/bin/node) 只在交互 shell PATH；GUI app(cc-switch) spawn 子进程的 PATH 可能不含。
+- MCP server_config 的 command 优先用 node 全路径（不依赖 PATH）。cc(VSCode 扩展)/codex 实测 PATH 含 node；cc-switch GUI 测试连接可能用 GUI PATH 报超时。
+
+### 7.8 rtk 操作经验
+- `rtk cat > file <<'EOF'`(写文件)、`rtk sqlite3 db <<'SQL'`(执行 SQL)、`rtk node <<'JS'`(跑脚本) 均工作。
+- `rtk find | rtk head` 管道输出可能被污染(输出 hex 串)；定位文件用 `rtk find` 单跑或 `rtk ls` 逐步。
+- `ls -t` 输出带 size 会污染变量，取文件用 `find`(纯路径)。
+
+### 7.9 session-bridge MCP 落地（v0.2.0 适配器化重构后，2026-06-18）
 - **权威源**：`~/.cc-switch/skills/_MCP/handoff/mcp-server.mjs`（~420 行，零依赖 Node ESM）。`~/.codex/handoff/` 是历史遗留死副本，**已删**（db 不引用）。
 - 工具：list_sessions / read_session(id, source?, since?, max_chars?) / current_session。read 默认输出上限 60000 字符（超限截断+提示），max_chars 可覆盖。
 - 水位：`~/.cache/session-bridge/watermark.json`（XDG 运行时目录，首次自动从旧路径迁移，旧文件保留兜底），**不再写源码目录**。
@@ -127,31 +122,7 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
 - 调试日志：`SB_DEBUG=1` 才写 /tmp/sb.log（默认关，生产干净）。
 - 验证(2026-06-18)：current/list/read 全量/增量/截断/自动探测 source 全通；协议层 initialize/tools/list/tools/call 正常。
 
-### 8.6 session-bridge 适配器化 + 扩展新工具方式（2026-06-18）
-- 架构：source 解析抽成**适配器注册表** `adapters=[codexAdapter, claudeAdapter]`，每个实现 `{ source, find(id,project?), list(project,limit), parse(file), currentSession(env,meta) }`。主干遍历注册表，不 switch source。
-- **加 opencode/pi 等新工具** = 加一个 adapter 对象 + 在 `adapters` push 一行，主干零改动。需先探明该工具：① 会话存储路径+格式（写 parse/find/list）② currentSession 特征（env 变量或 _meta key）。
-- 兼容性分层：MCP 协议层任何客户端(opencode/pi)都能调 list/read 读 cc/codex 会话；读其自身会话需对应 adapter（未实现）。
-- v0.2.0 修复清单：①watermark 迁移 ~/.cache ②删 .codex/handoff 死副本+源目录死 watermark ③调试日志 SB_DEBUG 门控 ④read 体积上限+截断 ⑤list 流式读取(不全量解析) ⑥错误可见化(lastError+console.error) ⑦适配器化重构。
-- 已知：read 大会话时 rtk 包装对大 stdout 处理慢（非 MCP 慢，parse 瞬间完成），直接 MCP 调用不受影响；stdio MCP 改代码需重启/新会话才加载（当前会话挂旧进程）。
-
-### 8.7 按关键词检索历史会话（2026-06-20）
-> 来源：2026-06-20 主人要求「搜之前 swagger/openapi 导入 yapi 的对话」。适用范围：跨项目会话检索。状态：有效。最后确认时间：2026-06-20。
-- read_session 只能按 ID 读、**不能搜关键词**；list_sessions 的 summary 只取开头一小段，目标话题常不在摘要里。按摘要盲读大会话（如 16M 的 codex 会话）既吃上下文又常落空。
-- **正确顺序：grep 本地 jsonl 定位会话文件 → 再 read_session 读上下文**。路径见 8.3（codex `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`；claude `~/.claude/projects/<编码>/<sessionId>.jsonl`，编码=cwd 的 `/`→`-`）。
-- 关键词收敛三步：① 英文独特词（`swagger`/`openapi`）找出候选文件集合；②「两词同行」`rtk rg -e "yapi.*(swagger|openapi)" -e "(swagger|openapi).*yapi"` 收敛到真正相关行（单文件大量命中常是工具返回里的 `$ref`/schema 残留，非用户意图）；③ 用户原话在 `event_msg.user_message.message` / `content[].text`，用精确中文短语（`转成openapi`/`上传到yapi`/`导入yapi`）最能锁定请求本身。
-- 输出过大时：`grep -v tool-results` / `head -N` / 先 `uniq -c` 看命中会话分布，避免 400KB 污染上下文。
-- **教训（本次实证）**：开头按摘要盲读 3 个大会话后才切 grep；以后「在历史会话里找某话题」应 **grep 优先**，read_session 仅用于读已定位会话的上下文。
-
-## 9. rtk / shell 操作经验
-
-> 来源：日常 rtk 使用实证。适用范围：所有需 shell 操作的场景。状态：有效。最后确认时间：2026-06-18。
-
-- `rtk cat > file <<'EOF'`(写文件)、`rtk sqlite3 db <<'SQL'`(执行 SQL)、`rtk node <<'JS'`(跑脚本) 均工作。
-- `rtk find | rtk head` 管道输出可能被污染(输出 hex 串)；定位文件用 `rtk find` 单跑或 `rtk ls` 逐步。
-- `ls -t` 输出带 size 会污染变量，取文件用 `find`(纯路径)。
-
-## 10. 工具链路与平台认知
-
+### 7.10 平台工具 vs agent 工具 + cc 调用链路认知
 > 来源：2026-06-18 本会话 cc-switch.log 实证 + 工具结果"Z.ai Built-in"标记。适用范围：全部会话。状态：有效。最后确认时间：2026-06-18。
 - **cc 实际链路**：cc → cc-switch 代理(127.0.0.1:15721) → 中转服务(腾讯云 81.70.81.85:23100) → model=glm-5.2。harness 声明 MiniMax-M2，实际路由 glm-5.2（中转前后端模型可能不一致）。
 - **工具两层（关键区分）**：
@@ -160,31 +131,17 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
 - **机制**：模型/平台提供工具是普遍能力（类比 OpenAI web_search/code_interpreter、Gemini grounding、智谱 web_search_prime）——模型生成 tool_call → 平台拦截执行 → 结果注入模型上下文，对 agent 半透明。
 - **隐私偏好（重要）**：涉及公司敏感信息（代码/会话/密钥）的读取，只用本地 MCP（fetch/session-bridge），避开平台 webReader/web_search_prime（经中转）。
 
+### 7.11 session-bridge 适配器化 + 扩展新工具方式（2026-06-18）
+- 架构：source 解析抽成**适配器注册表** `adapters=[codexAdapter, claudeAdapter]`，每个实现 `{ source, find(id,project?), list(project,limit), parse(file), currentSession(env,meta) }`。主干遍历注册表，不 switch source。
+- **加 opencode/pi 等新工具** = 加一个 adapter 对象 + 在 `adapters` push 一行，主干零改动。需先探明该工具：① 会话存储路径+格式（写 parse/find/list）② currentSession 特征（env 变量或 _meta key）。
+- 兼容性分层：MCP 协议层任何客户端(opencode/pi)都能调 list/read 读 cc/codex 会话；读其自身会话需对应 adapter（未实现）。
+- v0.2.0 修复清单：①watermark 迁移 ~/.cache ②删 .codex/handoff 死副本+源目录死 watermark ③调试日志 SB_DEBUG 门控 ④read 体积上限+截断 ⑤list 流式读取(不全量解析) ⑥错误可见化(lastError+console.error) ⑦适配器化重构。
+- 已知：read 大会话时 rtk 包装对大 stdout 处理慢（非 MCP 慢，parse 瞬间完成），直接 MCP 调用不受影响；stdio MCP 改代码需重启/新会话才加载（当前会话挂旧进程）。
 
-## 11. hook 强制机制（输出模板守护，2026-06-20）
-> 来源：2026-06-20 本会话落地 _HOOKS 单一源。适用范围：cc/codex 输出规则强制、hook 配置。状态：配置完成待实测。最后确认时间：2026-06-20。
-
-### 问题
-输出模板（agent.md 三件套）是规则驱动，密集技术操作时 agent 自检失效（§2 已记：连续 5 轮漏主人，靠用户指出）。规则驱动 ≠ 可靠必达。
-
-### 机制：hooks（harness 级强制，不经过 agent 注意力）
-cc/codex 都有 Stop 事件，exit 2 阻断让 agent 补齐。脚本检查最后 assistant 文本是否含三件套（主人/本轮使用/结束报告），缺则 exit 2。
-
-### 单一源落地（同 _MCP 模式）
-- 脚本：`~/.cc-switch/skills/_HOOKS/check-template.sh` 一份，两端指向。
-- cc：`~/.claude/settings.json` 的 `hooks.Stop[].command`（全局，所有项目）。
-- codex：`~/.codex/config.toml` 的 `[[hooks]] event="Stop" command="..."`。
-
-### 脚本兼容两端格式
-- cc：`.message.content[].text`（stdin=transcript_path）。
-- codex：`.payload.content[].text // .output_text`（content block type=output_text 非 text；参考 session-bridge mcp-server.mjs:119）。
-- 防护：无 jq/无 transcript/取不到 text/stop_hook_active=true → 放行（最坏不拦，不误伤）。
-
-### 关键风险与结论
-- **codex #17532**：hooks 在交互式会话不触发（已知 bug）。用户用 Codex.app 交互式 → codex 侧可能不生效，回退用户监督。两端不对等（cc 可阻断，codex 可能无效）。
-- **codex stdin 字段未实测**：脚本容错试 transcript_path/transcript/session_transcript，实际字段待 codex 实测。
-- **cc-switch 不可扩展管 hooks**：同步逻辑在 CC Switch.app 闭源内，~/.cc-switch 无脚本，db 无 hooks 表（有 mcp_servers/providers/skills/prompts 等）。降级为脚本单一源。
-
-### 状态
-- cc：配置完成，新会话验证（未实测生效）。
-- codex：配置完成，#17532 + stdin 待实测（可能无效）。
+### 7.12 按关键词检索历史会话（2026-06-20）
+> 来源：2026-06-20 主人要求「搜之前 swagger/openapi 导入 yapi 的对话」。适用范围：跨项目会话检索。状态：有效。最后确认时间：2026-06-20。
+- read_session 只能按 ID 读、**不能搜关键词**；list_sessions 的 summary 只取开头一小段，目标话题常不在摘要里。按摘要盲读大会话（如 16M 的 codex 会话）既吃上下文又常落空。
+- **正确顺序：grep 本地 jsonl 定位会话文件 → 再 read_session 读上下文**。路径见 7.3（codex `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`；claude `~/.claude/projects/<编码>/<sessionId>.jsonl`，编码=cwd 的 `/`→`-`）。
+- 关键词收敛三步：① 英文独特词（`swagger`/`openapi`）找出候选文件集合；②「两词同行」`rtk rg -e "yapi.*(swagger|openapi)" -e "(swagger|openapi).*yapi"` 收敛到真正相关行（单文件大量命中常是工具返回里的 `$ref`/schema 残留，非用户意图）；③ 用户原话在 `event_msg.user_message.message` / `content[].text`，用精确中文短语（`转成openapi`/`上传到yapi`/`导入yapi`）最能锁定请求本身。
+- 输出过大时：`grep -v tool-results` / `head -N` / 先 `uniq -c` 看命中会话分布，避免 400KB 污染上下文。
+- **教训（本次实证）**：开头按摘要盲读 3 个大会话后才切 grep；以后「在历史会话里找某话题」应 **grep 优先**，read_session 仅用于读已定位会话的上下文。

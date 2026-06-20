@@ -11,7 +11,7 @@
 | 生成时间             | TODO                                                 |
 | 状态                 | [ ] Draft [ ] Reviewed [ ] Confirmed [ ] Changed     |
 
-> **定位**：本文档是接口契约唯一事实源。[requirements-detail.md](M{N}-{模块名}/design/requirements-detail.md) 只写接口需求摘要，[frontend-design.md](M{N}-{模块名}/design/frontend-design.md) 和 [implementation-tasks.md](M{N}-{模块名}/design/implementation-tasks.md) 只引用接口 ID。本文档先维护 Frontend-Proposed API Contract；后端 OpenAPI/YApi/Markdown/接口表只作为 Backend Contract Evidence 导入，并通过差异表对齐。
+> **定位**：本文档是前端工作流内的接口契约唯一事实源（团队层面接口定义的单一源是 YApi，本文档是 YApi 在前端侧的工作副本）。[requirements-detail.md](M{N}-{模块名}/design/requirements-detail.md) 只写接口需求摘要，[frontend-design.md](M{N}-{模块名}/design/frontend-design.md) 和 [implementation-tasks.md](M{N}-{模块名}/design/implementation-tasks.md) 只引用接口 ID。本文档先维护 Frontend-Proposed API Contract；后端 OpenAPI/YApi/Markdown/接口表只作为 Backend Contract Evidence 导入，并通过差异表对齐。
 
 ---
 

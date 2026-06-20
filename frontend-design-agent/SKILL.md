@@ -54,7 +54,7 @@ requirements-detail.md → code-reference.md → api-contract.md → frontend-de
 - [M{N}/sources/mastergo/](sources/mastergo/)：模块级 MasterGo DSL 原始响应目录；成功调用 `mcp__getDsl` 或 `mcp__getComponentGenerator` 后必须保存完整 JSON 响应，供审查和 `module-design` 读取。
 - [prototype.md](prototype.md)：原型事实。
 - [code-reference.md](code-reference.md)：代码模式事实源。
-- [api-contract.md](api-contract.md)：接口契约唯一事实源；维护前端根据页面交互、字段、状态流和 PRD 先拟定的 Frontend-Proposed 契约，以及后端契约导入后的差异对齐结果。
+- [api-contract.md](api-contract.md)：前端工作流内的接口契约唯一事实源（团队层面接口定义单一源为 YApi，本文档是其前端工作副本）；维护前端根据页面交互、字段、状态流和 PRD 先拟定的 Frontend-Proposed 契约，以及后端契约导入后的差异对齐结果。
 - [frontend-design.md](frontend-design.md)：模块实现方案。
 - [implementation-tasks.md](implementation-tasks.md)：实现 Agent 唯一执行入口。
 
@@ -141,6 +141,15 @@ Canonical filename mapping（legacy 中文名只读兼容）：
 | `mcp__C2d` | 代码转设计同步 | 默认不用于 `module-split` / `module-design` Evidence 获取 |
 | Shell 命令                           | RTK                         | 所有 shell 命令加 `rtk` 前缀                                            |
 
+### 5.2 可选：导出 OpenAPI 3.0 / 同步 YApi（不在 workflow 默认环节）
+
+当需要把 `api-contract.md` 导出为 OpenAPI 3.0、导入 YApi（团队单一源）时，手动运行独立工具，**不在 module-design 默认产物内**：
+
+- 转换：`rtk node scripts/contract-to-swagger.mjs <api-contract.md> [openapi.json] [--base-path /] [--title T] [--host H]`
+- 导入 YApi（先 MCP、CLI 后补）：见 [references/yapi-sync.md](references/yapi-sync.md)。
+
+YApi 是团队接口单一源；`api-contract.md` 是前端工作副本（拟定态 + 对齐结果），导出/同步为可选动作，不改变其事实源地位。
+
 ## 6. 不可违反的硬约束
 
 - `module-split` 只做模块事实切片，完成后停在人工审查/补图阶段，不自动进入 `module-design`。
@@ -152,7 +161,7 @@ Canonical filename mapping（legacy 中文名只读兼容）：
 - `implement` 只能按 `implementation-tasks.md` 的任务 ID 执行；不要用“实现某模块”替代任务 ID。
 - `implementation-tasks.md` 是实现 Agent 的唯一执行入口，任务粒度保持 2-5 分钟。
 - `module-index.md` 只做 Manifest，不复制完整需求、UI DSL、接口详情、代码骨架或任务明细。
-- `api-contract.md` 是接口契约唯一事实源；`requirements-detail.md`、`frontend-design.md`、`implementation-tasks.md` 只能引用接口 ID 或保留摘要。
+- `api-contract.md` 是前端工作流内的接口契约唯一事实源（团队层面接口定义单一源为 YApi，本文档是其前端工作副本）；`requirements-detail.md`、`frontend-design.md`、`implementation-tasks.md` 只能引用接口 ID 或保留摘要。
 - `api-contract.md` 必须严格采用以下章节结构，禁止自行发明平铺式布局：
   1. **§0 全局约定**：命名规范（接口 ID / Req / Resp / Dto / Enum 命名规则表）+ `ApiRespResult<T>` 普通响应完整 JSON 示例和字段表 + `BasePageResult<T>` 分页响应完整 JSON 示例和字段表。
   2. **§1 接口总览**：按模块分组的总表，字段为 `模块/接口/方法/路径`。
