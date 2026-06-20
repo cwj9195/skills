@@ -1,6 +1,6 @@
-# requirements.md 模板（module-split 第一轮）
+# requirements.md legacy 模板（只读兼容）
 
-> 本文件是当前模块的需求事实切片，用于人工审查和后续 `module-design`。只记录来自 PRD/原型/澄清材料的事实、接口线索和待确认项，不写实现方案、代码骨架或正式接口契约。
+> 本文件仅用于读取历史 module-split 四文件产物，不再作为新产物模板。新运行的 module-split 必须将本文件承载的信息写入 `module.md` 的 Scope & Requirements、Fields & Permissions、API Hints、Review Notes 与 Gate 章节。
 
 | 项目          | 内容                           |
 | ------------- | ------------------------------ |

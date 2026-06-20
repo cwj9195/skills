@@ -1,6 +1,8 @@
-# ui.md 模板（module-split 第一轮）
+# ui.md legacy 模板（只读兼容）
 
-> 本文件记录当前模块的 UI / 视觉 / 设计稿事实，用于人工审查和后续 `module-design`。MasterGo 链接必须优先尝试 `mcp__getComponentGenerator`，必要时补充 `mcp__getDsl` / `mcp__getMeta`；成功后完整 DSL 或组件规格必须保存到模块内 [sources/mastergo/](sources/mastergo/) 并在本文件链接引用。本文件只写可读摘要、组件线索、token 线索和 DSL 文件链接，不粘贴完整 DSL JSON；截图、DSL、原型素材路径必须使用 Markdown 链接，不得只写反引号路径作为唯一引用。
+> 本文件仅用于读取历史 module-split 四文件产物，不再作为新产物模板。新运行的 module-split 必须将 UI / 视觉 / 设计稿事实写入 `module.md` 的 UI Evidence，并将流程事实写入 `module.md` 的 Prototype/Flow。MasterGo 链接仍必须优先尝试 `mcp__getComponentGenerator`，必要时补充 `mcp__getDsl` / `mcp__getMeta`；成功后完整 DSL 或组件规格必须保存到模块内 [sources/mastergo/](sources/mastergo/) 并在 `module.md` 链接引用。
+>
+> 素材归类：MasterGo DSL / 组件规格 JSON 是 Verified UI Evidence；PRD 内嵌图片是 fallback visual evidence；CoDesign、原型导出、流程截图属于 Prototype Evidence，页面跳转和交互意图应写入 `module.md#prototype-flow`。
 
 | 项目          | 内容                           |
 | ------------- | ------------------------------ |
@@ -68,13 +70,15 @@
 
 ## 6. 素材与 ID 链接规范
 
+- [ ] MasterGo DSL / 组件规格 JSON 归入 UI Evidence；PRD 内嵌图片只作为 fallback visual evidence。
+- [ ] CoDesign、原型导出、流程截图、页面跳转和交互意图在新产物中归入 [module.md#prototype-flow](module.md#prototype-flow)。
 - [ ] 表格内截图路径使用 `[截图](../sources/xxx.png)`。
 - [ ] 正文预览图使用 `![截图说明](../sources/xxx.png)`。
 - [ ] 禁止只写 `` `../sources/xxx.png` `` 作为唯一引用。
-- [ ] 第一轮 [M{N}/ui.md](ui.md) 使用 [../sources/xxx](../sources/xxx)。
+- [ ] 新产物 [M{N}/module.md](module.md) 使用 [../sources/xxx](../sources/xxx)。
 - [ ] 第二轮 [M{N}/design/frontend-design.md](design/frontend-design.md) 若引用截图，使用 [../../sources/xxx](../../sources/xxx)。
 - [ ] 每个 UI Source 必须包含 UI Source ID、页面/状态名称、MasterGo 链接、截图链接、DSL 状态、DSL 文件链接、证据和原文摘要。
 - [ ] MasterGo DSL 成功获取时，必须存在对应 [sources/mastergo/UI-M{N}-001.dsl.json](sources/mastergo/UI-M{N}-001.dsl.json) 原始 JSON；摘要不能替代原始 Evidence。
-- [ ] [ui.md](ui.md) 只写 DSL 摘要、主要组件、交互状态、关键 token 和文件链接，禁止粘贴完整 DSL JSON。
+- [ ] 新产物 [module.md](module.md) 只写 DSL 摘要、主要组件、交互状态、关键 token 和文件链接，禁止粘贴完整 DSL JSON。
 - [ ] 每个 UI Source 定义处必须有 `<a id="ui-m{N}-001"></a>` 形式的稳定锚点，生成实际模块时替换为 `ui-m2-001` 这类小写锚点。
 - [ ] 引用 UI Source 时必须写 `[UI-M{N}-001](#ui-m{N}-001)`，禁止裸写 `UI-M{N}-001` 作为唯一引用。

@@ -1,6 +1,6 @@
 # module-index.md 模板（Manifest 单一入口源）
 
-> **定位**：本文档是三轮链路的 Manifest 单一入口源，只维护模块身份、路径、状态和索引。详细需求、UI、原型、接口契约、代码模式、实现方案和任务明细分别由对应文件维护。
+> **定位**：本文档是三轮链路的 Manifest 单一入口源，只维护模块身份、路径、状态和索引。module-split 每模块只生成 `module.md`，并用锚点索引需求、UI、原型和审查项。
 
 ## 1. 设计根信息
 
@@ -23,7 +23,7 @@
 | Source ID | 来源类型 | 原始地址或路径 | 快照路径 | 获取时间 | 可信度 | 降级原因 | 说明 |
 | --------- | -------- | -------------- | -------- | -------- | ------ | -------- | ---- |
 | PRD-001   | 本地 PRD / 网页 PRD | TODO | [sources/PRD.md](sources/PRD.md) | TODO | Verified / Fallback / Unverified | 无 / TODO | TODO |
-| UI-001    | MasterGo | TODO / 无 | 无 / 模块级 [sources/mastergo/](sources/mastergo/) | TODO | Verified / Partially Verified / Fallback / Unverified | 无 / 部分图层待提取 / 超时 / TODO | 优先 `mcp__getComponentGenerator` 落盘；必要时补充 `mcp__getDsl` |
+| UI-001    | MasterGo | TODO / 无 | 无 / 模块级 [sources/mastergo/](sources/mastergo/) | TODO | Verified / Partially Verified / Fallback / Unverified / Blocked | 无 / 部分图层待提取 / 超时 / 缺少 MasterGo MCP / TODO | 优先 `mcp__getComponentGenerator` 落盘；必要时补充 `mcp__getDsl` / `mcp__getMeta` / `mcp__getD2c` / `mcp__getComponentLink` |
 | PROTO-001 | CoDesign / 原型 | TODO / 无 | TODO / 无 | TODO | Verified / Fallback / Unverified | 无 / TODO | TODO |
 
 <a id="source-prd-001"></a>
@@ -42,7 +42,7 @@
 | ---- | ---- |
 | Source ID | UI-001 |
 | 快照路径 | 无 / [sources/MasterGo.md](sources/MasterGo.md) |
-| 说明 | 记录 MasterGo 图层总数、已落盘 canonical DSL 数、失败/超时图层和待补材料；优先使用 `mcp__getComponentGenerator` 落盘。 |
+| 说明 | 记录 MasterGo 图层总数、已落盘 canonical DSL 数、失败/超时/缺少 MCP 图层和待补材料；优先使用 `mcp__getComponentGenerator` 落盘，必要时补充 `mcp__getDsl` / `mcp__getMeta` / `mcp__getD2c` / `mcp__getComponentLink`。 |
 
 <a id="source-proto-001"></a>
 ### PROTO-001
@@ -63,9 +63,9 @@
 
 ## 3. 模块 Manifest
 
-| 模块 ID | 模块名称 | 模块目录             | 需求文件                    | 界面文件                    | 原型文件                    | 审查记录                        | 设计输出目录              | 模块状态                                                                | 人工审查状态                    | 接口 ID 索引       | 证据              |
-| ------- | -------- | -------------------- | --------------------------- | --------------------------- | --------------------------- | ------------------------------- | ------------------------- | ----------------------------------------------------------------------- | ------------------------------- | ------------------ | ----------------- |
-| M{N}    | TODO     | [M{N}-{模块名}/](M{N}-{模块名}/) | [requirements.md](M{N}-{模块名}/requirements.md) | [ui.md](M{N}-{模块名}/ui.md) | [prototype.md](M{N}-{模块名}/prototype.md) | [review-notes.md](M{N}-{模块名}/review-notes.md) | [design/](M{N}-{模块名}/design/) | Split / Reviewed / Designing / Designed / Implementing / Done / Blocked | 待审查 / 已审查 / 待补图 / 阻塞 | API-M{N}-TODO / 无 | PRD-001:Lx-Ly |
+| 模块 ID | 模块名称 | 模块目录             | 模块文件                    | UI Evidence                    | Prototype/Flow                    | Review Notes                        | 设计输出目录              | 模块状态                                                                | 人工审查状态                    | 接口 ID 索引       | 证据              |
+| ------- | -------- | -------------------- | --------------------------- | ------------------------------ | --------------------------------- | ----------------------------------- | ------------------------- | ----------------------------------------------------------------------- | ------------------------------- | ------------------ | ----------------- |
+| M{N}    | TODO     | [M{N}-{模块名}/](M{N}-{模块名}/) | [module.md](M{N}-{模块名}/module.md) | [module.md#ui-evidence](M{N}-{模块名}/module.md#ui-evidence) | [module.md#prototype-flow](M{N}-{模块名}/module.md#prototype-flow) | [module.md#review-notes](M{N}-{模块名}/module.md#review-notes) | 待 module-design 创建 / [design/](M{N}-{模块名}/design/) | Split / Reviewed / Designing / Designed / Implementing / Done / Blocked | 待审查 / 已审查 / 待补图 / 阻塞 | API-M{N}-TODO / 无 | PRD-001:Lx-Ly |
 
 ### 3.1 命名与语言策略
 
@@ -82,7 +82,7 @@
 | ------------ | ----------------------------------------------------------------------- |
 | 模块 ID      | M{N}                                                                    |
 | 当前目录     | 见模块 Manifest 表                                                      |
-| 设计输出目录 | 见模块 Manifest 表                                                      |
+| 设计输出目录 | module-split 阶段写“待 module-design 创建”；进入 module-design 后再写实际 [design/](M{N}-{模块名}/design/) 链接 |
 | 接口 ID 索引 | API-M{N}-TODO / 无                                                      |
 | 当前状态     | Split / Reviewed / Designing / Designed / Implementing / Done / Blocked |
 | 证据         | [PRD-001](#source-prd-001):Lx-Ly                                        |

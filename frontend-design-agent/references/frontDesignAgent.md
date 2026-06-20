@@ -21,7 +21,7 @@ FrontDesignAgent 的目标不是生成“看起来完整”的前端设计文档
 | 设计描述抽象，AI 写不出代码                 | 增加 `code-reference.md` 和可粘贴代码骨架            |
 | 接口散落在多个文件                          | `api-contract.md` 成为前端工作流内接口契约唯一事实源           |
 | 任务太大，无法直接执行                      | `implementation-tasks.md` 控制到 2-5 分钟粒度              |
-| PRD、UI、原型冲突没有承接点                 | 第一轮用模块切片和 `review-notes.md` 支持人工审查  |
+| PRD、UI、原型冲突没有承接点                 | 第一轮用 `module.md` 的 Review Notes 支持人工审查  |
 | MasterGo 链接只被记录，缺少真实 UI Evidence | 检测到链接必须优先尝试 `mcp__getComponentGenerator`，必要时补充 `mcp__getDsl` |
 | ID 只能阅读不能跳转                         | 引用型稳定 ID 使用 Markdown 链接和显式锚点     |
 
@@ -60,7 +60,7 @@ mode_select
 | RequirementStructAgent | 将模块需求整理成结构化需求事实                        | `requirements-detail.md`            |
 | CodeReferenceAgent     | 用 Codegraph 提取项目级代码模式                       | `code-reference.md`            |
 | ApiContractAgent       | 维护根级接口契约总账                                  | `api-contract.md`            |
-| PrototypeFactAgent     | 从 MasterGo/原型提取 UI 和交互事实                    | `ui.md` 或设计布局章节 |
+| PrototypeFactAgent     | 从 MasterGo/原型提取 UI 和交互事实                    | `module.md` 的 UI Evidence / Prototype/Flow，或设计布局章节 |
 | DesignDocAgent         | 生成模块实现方案                                      | `frontend-design.md`            |
 | TaskAgent              | 生成代码级任务包                                      | `implementation-tasks.md`            |
 

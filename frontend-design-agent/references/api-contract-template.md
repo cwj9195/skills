@@ -111,7 +111,7 @@
 | 入参 | `TODOReq` |
 | 出参 | `ApiRespResult<TODOResp>` / 分页 `TODODto` |
 
-> 前端推导依据：需求: [REQ-M{N}-TODO](M{N}-{模块名}/design/requirements-detail.md#req-m{N}-todo) / UI: [UI-M{N}-TODO](M{N}-{模块名}/ui.md#ui-m{N}-todo) / 流程: [FLOW-M{N}-TODO](M{N}-{模块名}/design/requirements-detail.md#flow-m{N}-todo)
+> 前端推导依据：需求: [REQ-M{N}-TODO](M{N}-{模块名}/design/requirements-detail.md#req-m{N}-todo) / UI: [UI-M{N}-TODO](M{N}-{模块名}/module.md#ui-evidence) / 流程: [FLOW-M{N}-TODO](M{N}-{模块名}/module.md#prototype-flow)
 >
 > 证据: Source: [PRD-001](module-index.md#source-prd-001)<br/>快照: [sources/PRD.md:Lx-Ly](sources/PRD.md#Lx)
 >

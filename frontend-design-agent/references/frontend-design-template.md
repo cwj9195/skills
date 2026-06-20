@@ -157,10 +157,10 @@ export const {module}ApiMap = {
 
 | UI Source ID | 页面/状态 | 截图 | DSL 状态 | 证据 |
 | ------------ | --------- | ---- | -------- | -------- |
-| [UI-M{N}-001](../ui.md#ui-m{N}-001) | TODO | [截图](../../sources/TODO.png) / 无 | 待提取 / 已提取 / 失败 | [UI-M{N}-001](../ui.md#ui-m{N}-001) |
+| [UI-M{N}-001](../module.md#ui-evidence) | TODO | [截图](../../sources/TODO.png) / 无 | 待提取 / 已提取 / 失败 | [UI-M{N}-001](../module.md#ui-evidence) |
 
 > 表格内截图使用 `[截图](../../sources/xxx.png)`；需要正文预览时使用 `![截图说明](../../sources/xxx.png)`。禁止只写反引号路径作为唯一引用。
-> 引用 UI Source ID 时必须使用 `[UI-M{N}-001](../ui.md#ui-m{N}-001)`；引用接口 ID 时必须使用 `[API-M{N}-TODO](../../api-contract.md#api-m{N}-todo)`；文件路径、代码位置、组件文档必须使用 Markdown 链接，禁止裸写 ID 或反引号路径作为唯一引用。
+> 引用 UI Source ID 时必须使用 `[UI-M{N}-001](../module.md#ui-evidence)`；引用接口 ID 时必须使用 `[API-M{N}-TODO](../../api-contract.md#api-m{N}-todo)`；文件路径、代码位置、组件文档必须使用 Markdown 链接，禁止裸写 ID 或反引号路径作为唯一引用。
 
 ### 验收标准
 

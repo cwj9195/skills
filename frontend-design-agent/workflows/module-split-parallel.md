@@ -1,22 +1,38 @@
-# module-split-parallel
+# module-split-parallel Workflow Playbook
 
-> 复用脚本：按 §3.1 内容密度门禁并行生成多模块 `module-split` 产物。  
-> 对应：[SKILL.md §5.3 多模块并行生成（默认执行模式）](../SKILL.md) 与 [workflow.md §3.1 内容密度门禁](../references/workflow.md)。
+> 定位：本文件是多模块 `module-split` 的并行编排 Playbook，不是可直接执行的 workflow runtime。  
+> 对应：[SKILL.md 多模块强制路由](../SKILL.md) 与 [workflow.md §3.1 内容密度门禁](../references/workflow.md)。
 
-## 何时调用
+## 何时使用
 
-满足任一即强制调用本脚本：
+满足任一即强制使用本 Playbook：
 
 - `module-split` 阶段，目标模块数 ≥ 5
-- 单次产出 ≥ 10 个模块级文件（`requirements.md` / `ui.md` / `prototype.md` / `review-notes.md`）
+- 单次产出 ≥ 10 个模块级文件；按每模块 `module.md` 与 `_gate.json` 计算
 - 调用方已有"质量断崖"复现记录（参见 [[module-design-quality-decay]]）
 
 不触发：单文件 bug fix、单组件设计、模块数 ≤ 3。
 
-## 调用方式
+## 执行方式
+
+优先使用当前环境可用的多 Agent 工具承载 `extract / verify`：
+
+- 主 Agent：准备共享输入、分配模块写入边界、聚合结果。
+- extract sub-agent：每个模块一个，产出该模块 `module.md` 和 `_gate.json`。
+- verify sub-agent：每个模块一个，复核该模块 `_gate.json` 与 `module.md`。
+- aggregate：由主 Agent 或单独 aggregate agent 汇总 [module-index.md](../references/module-index-template.md) 与 review-summary。
+
+如果当前环境没有多 Agent 工具，按相同阶段串行模拟，并在 review-summary 中记录：
+
+```text
+Workflow 并行执行方式：Fallback / SerialSimulated
+原因：当前环境未提供可用 sub-agent 工具
+影响：执行耗时增加，需额外检查后期模块质量衰减
+```
+
+参数结构示例：
 
 ```js
-// 伪代码：实际用本 Skill 的 Workflow 工具调用
 const args = {
   prdPath: "/abs/path/to/prd.md",
   outputDir: "/abs/path/to/apps/{app}/docs/{version}/",
@@ -28,14 +44,13 @@ const args = {
   gateProfile: "default" | "strict",  // 第一次调用 default，第二次（回填）strict
   sourceRegistry: "PRD-001",           // 必填，挂在 module-index#source-prd-001
 }
-await workflow("module-split-parallel", args)
 ```
 
 ## 三阶段流水线
 
 | 阶段 | Agent 数 | 共享输入 | 产物 |
 | --- | --- | --- | --- |
-| `extract` | N（=模块数） | `sources/PRD.md` + §3.1 schema + 行号映射 + `gateProfile` | 每模块 4 件套 + `sources/mastergo/*.dsl.json`（按需） |
+| `extract` | N（=模块数） | `sources/PRD.md` + §3.1 schema + 行号映射 + `gateProfile` | 每模块 `module.md` + `sources/mastergo/*.dsl.json` |
 | `verify` | N | 同上 + 上阶段产物 | 每模块 `_gate.json`（PASS / FAIL / Blocked） |
 | `aggregate` | 1 | 上阶段全部产物 | `module-index.md`（含 cross-module rules） |
 
@@ -65,7 +80,7 @@ await workflow("module-split-parallel", args)
 ## Agent prompt 模板（`extract` 阶段）
 
 ```text
-你是 module-split 阶段的 extract agent。任务：为模块 M{N}「{name}」产出 4 件套。
+你是 module-split 阶段的 extract agent。任务：为模块 M{N}「{name}」产出 module-split 资料。
 
 ## 必读
 - /Users/amoy/.cc-switch/skills/frontend-design-agent/SKILL.md §5.3
@@ -79,12 +94,9 @@ await workflow("module-split-parallel", args)
 - gateProfile：{gateProfile}
 
 ## 产出（强制）
-1. {outputDir}M{N}-{name}/requirements.md
-2. {outputDir}M{N}-{name}/ui.md
-3. {outputDir}M{N}-{name}/prototype.md
-4. {outputDir}M{N}-{name}/review-notes.md
-5. （按需）{outputDir}M{N}-{name}/sources/mastergo/*.dsl.json
-6. {outputDir}M{N}-{name}/_gate.json
+- {outputDir}M{N}-{name}/module.md
+- {outputDir}M{N}-{name}/_gate.json
+- MasterGo 成功获取时：{outputDir}M{N}-{name}/sources/mastergo/*.dsl.json
 
 ## 硬规则（违反即 Blocked）
 - 所有引用型 ID 必须用 [ID](#anchor) 或 [ID](相对路径#anchor)，锚点小写
@@ -92,13 +104,14 @@ await workflow("module-split-parallel", args)
 - Evidence 必须同时含 Source Registry 链接 + 快照行号链接 + 原文摘要
 - PRD 行号以 {outputDir}sources/PRD.md 快照为准
 - 每个 Req/Rule/Field/UI Source 都要有 PRD 行号证据，禁止只写 "PRD(L417-818)"
+- 若 PRD 存在 MasterGo 链接但当前环境没有 `mcp__getComponentGenerator` / `mcp__getDsl` / `mcp__getMeta` / `mcp__getD2c` / `mcp__getComponentLink` 任一工具，且用户要求拆分阶段必须拿 UI，则该模块 verdict=Blocked，不得标记 PASS。
 
 ## 内容密度门禁（gateProfile={gateProfile}）
 - REQ ≥ 3 条 / 平均跨度 ≤ {strict ? 30 : 50} 行
 - FIELD 100% 覆盖该模块 PRD 中字段表行
-- UI Source 100% Verified 或附 Fallback 理由（strict 不允许 Fallback）
+- UI Source 100% Verified；仅用户明确允许 Fallback 时可附 Fallback 理由（strict 或“必须拿 UI”不允许 Fallback）
 - APIHINT 与同类模块差异 ≥ {strict ? 50 : 30}%，否则提 CR
-- review-notes ≥ 1 条本模块独有待确认
+- Review Notes ≥ 1 条本模块独有待确认
 
 完成后输出 _gate.json，再结束本轮。
 ```
@@ -106,13 +119,13 @@ await workflow("module-split-parallel", args)
 ## Agent prompt 模板（`verify` 阶段）
 
 ```text
-你是 verify agent。任务：读 M{N}-*/_gate.json 与 4 件套产物，跑 §3.1 五项门禁的二次核对。
+你是 verify agent。任务：读 M{N}-*/_gate.json 与 module-split 产物，跑 §3.1 五项门禁的二次核对。
 
 ## 必读
 - SKILL.md §5.3
 - workflow.md §3.1
 - M{N}-*/_gate.json
-- M{N}-*/{requirements,ui,prototype,review-notes}.md
+- M{N}-*/module.md
 
 ## 输出
 - 覆盖 _gate.json 的 verdict（PASS/FAIL/Blocked）
