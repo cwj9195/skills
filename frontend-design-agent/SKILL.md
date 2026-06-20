@@ -150,6 +150,52 @@ Canonical filename mapping（legacy 中文名只读兼容）：
 
 YApi 是团队接口单一源；`api-contract.md` 是前端工作副本（拟定态 + 对齐结果），导出/同步为可选动作，不改变其事实源地位。
 
+
+### 5.3 多模块并行生成（默认执行模式）
+
+> **多模块任务默认用 Workflow 并行，不走单 Agent 串行。** 单 Agent 串行在 ≥ 8 个模块或多文件任务上会随上下文累积出现"质量断崖"——越往后越疲，越倾向于套模板、REQ/字段偷工、UI 占位（典型复现见 `apps/pim/docs/260608-第1版/`）。本节固化根因与解药，避免复发。
+
+**根因（三层合谋）**
+
+| 层 | 病灶 | 现有对策 | 缺失对策 |
+| --- | --- | --- | --- |
+| 共谋层 | 模板驱动方法中"硬约束可验证、软约束不可验证"的不对称 | §3 章节/锚点/Evidence 硬约束 | **§3.1 内容密度门禁**（REQ/FIELD/UI/APIHINT/review-notes 五项量化） |
+| 直接层 | 单 Agent 串行 + 上下文累积 → 后期疲劳衰减 | 无 | **Workflow Fan-out**：每模块一个新鲜 Agent，共享 §3.1 门禁 schema |
+| 流程层 | "切片"定位被滥用为"边拆边降级"授权 | 无 | **回填是并行的二次调用**——同一 Workflow，更强 schema 再跑一遍 |
+
+**触发条件（满足任一即强制走 Workflow 并行）**
+
+- 任务：`module-split` 或 `module-design`，目标模块数 ≥ 5。
+- 文件：单次产出 ≥ 10 个模块级文件（`requirements.md` / `ui.md` / `prototype.md` / `review-notes.md` / `design/*.md`）。
+- 历史教训：本仓库或调用方已有"质量断崖"复现记录。
+
+**反例（不触发）**
+
+- 单文件 bug fix、单组件设计、单个 `module-design`（目标模块 = 1）。
+- 接口联调、小型重写。
+- 模块数 ≤ 3 时，并行收益不抵开销，可选不强制。
+
+**推荐 Workflow 调用**
+
+优先复用随本 Skill 源目录分发的 [`workflows/module-split-parallel.md`](workflows/module-split-parallel.md) 脚本；Claude/Codex 通过 symlink 读取 `/Users/amoy/.cc-switch/skills/frontend-design-agent` 同一份源；自定义时按下表构造：
+
+| 阶段 | 行为 | Agent 数 | 共享输入 | 输出 |
+| --- | --- | --- | --- | --- |
+| `extract` | 每模块独立产出 4 件套 | N（= 模块数） | `sources/PRD.md` + §3.1 门禁 schema + 行号映射 | `M{i}-*/requirements.md` `ui.md` `prototype.md` `review-notes.md` + `sources/mastergo/*.dsl.json` |
+| `verify` | 跑 §3.1 五项门禁 | N | 同上 + 上阶段产物 | `M{i}-*/_gate.json`（PASS/FAIL/Blocked 项） |
+| `aggregate` | 聚合 `module-index.md` + 跨模块规则 CR | 1 | 上阶段全部产物 | `module-index.md`（含 cross-module rules） |
+
+**回填语义**（流程层兜底）
+
+- 第一次调用 = 拆边界（"切片"定位，快速但允许字段级契约后置）。
+- 第二次调用（同 Workflow，更严 schema）= 按统一深度回填到字段级、UI Evidence 补齐、申请单类去重。
+- 两次调用**不重写框架**，只重写深内容，避免返工。
+
+**与 MCP / 阶段门禁的关系**
+
+- Workflow Agent 内部**仍**按 §5.1 MasterGo 工具矩阵执行 Evidence 采集；Workflow 是外层并发编排，不取代内层工具顺序。
+- Codegraph / Chrome DevTools / MasterGo / YApi MCP 仍按 §5 表格执行。
+- §3.1 门禁（`module-split` 内容密度）+ `analyze`（`module-design` 设计自审）+ `verify`（`implementation-tasks` 任务粒度）三层叠加，逐阶段把关。
 ## 6. 不可违反的硬约束
 
 - `module-split` 只做模块事实切片，完成后停在人工审查/补图阶段，不自动进入 `module-design`。

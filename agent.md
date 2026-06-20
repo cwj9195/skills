@@ -28,7 +28,7 @@
 - `当前对话引用ID` 按下方规则获取；若仍无法确认，写 `❌Unknown`，不写 `-`，禁止编造。
     - 当前对话引用ID获取规则：优先调用 `session-bridge.current_session`；ClaudeCode 读 `CLAUDE_CODE_SESSION_ID`，Codex 读 MCP `_meta.x-codex-turn-metadata.session_id`。失败时用 `session-bridge.list_sessions` 按 cwd/时间/摘要指认；仍无法确认则写 `❌Unknown`，禁止编造。
     - 每轮结束报告的当前对话引用ID 必须实际调用 session-bridge.current_session 或读取 CLAUDE_CODE_SESSION_ID 获取，禁止未尝试即写 ❌Unknown
-- 改动 skills、MCP 时，只改 cc-switch 源信息。
+- 改动 skills、MCP 时，只改 cc-switch 源信息,codex 和 claudecode 都是通过软链指向的cc-switch的。
 - 全程用中文说明结论、证据、风险和取舍；~~不要输出内部思考链。~~
 
 ## 基础包规则
