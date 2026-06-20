@@ -24,7 +24,6 @@
 | 接口契约字段和状态表                                   | `api-contract-template.md`     | 接口契约结构以模板为准                 |
 | 前端设计章节                                           | `frontend-design-template.md`  | 设计产物结构以模板为准                 |
 | 编码任务字段                                           | `claude-code-task-template.md` | 任务字段、任务粒度和验证输出以模板为准 |
-| 设计理念、背景、取舍                                   | `frontDesignAgent.md`          | 只作蓝图/背景材料，不作为执行规则源    |
 
 ## 1. 状态机
 

@@ -44,8 +44,8 @@ description: 'Use when Codex needs to turn PRD/specs, MasterGo layers, prototype
 
 | 模式 | 必读 reference | 按需 reference |
 | --- | --- | --- |
-| `module-split` | [references/workflow.md](references/workflow.md)、[references/module-index-template.md](references/module-index-template.md)、[references/module-template.md](references/module-template.md) | 需要理解设计背景时读 [references/frontDesignAgent.md](references/frontDesignAgent.md)；legacy 四文件输入只读兼容，不作为新产物模板 |
-| `module-design` | [references/workflow.md](references/workflow.md)、[references/requirements-template.md](references/requirements-template.md)、[references/code-reference-template.md](references/code-reference-template.md)、[references/api-contract-template.md](references/api-contract-template.md)、[references/frontend-design-template.md](references/frontend-design-template.md)、[references/claude-code-task-template.md](references/claude-code-task-template.md) | 需要理解设计背景时读 [references/frontDesignAgent.md](references/frontDesignAgent.md) |
+| `module-split` | [references/workflow.md](references/workflow.md)、[references/module-index-template.md](references/module-index-template.md)、[references/module-template.md](references/module-template.md) | legacy 四文件输入只读兼容，不作为新产物模板 |
+| `module-design` | [references/workflow.md](references/workflow.md)、[references/requirements-template.md](references/requirements-template.md)、[references/code-reference-template.md](references/code-reference-template.md)、[references/api-contract-template.md](references/api-contract-template.md)、[references/frontend-design-template.md](references/frontend-design-template.md)、[references/claude-code-task-template.md](references/claude-code-task-template.md) | 任务涉及 YApi/OpenAPI 同步时读 [references/yapi-sync.md](references/yapi-sync.md) |
 | `implement` | [references/workflow.md](references/workflow.md)、[references/claude-code-task-template.md](references/claude-code-task-template.md) | 任务涉及接口时读 [references/api-contract-template.md](references/api-contract-template.md)；需要追溯方案时读对应设计产物 |
 
 多模块强制路由：
