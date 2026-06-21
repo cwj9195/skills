@@ -45,10 +45,6 @@
 - Codegraph 能回答的，不用 Bash 的 ls/find/grep/cat 重复检索。
 - 需要完整文件内容、运行时输出、命令结果，或 Codegraph 信息不足时，再用 bash 补证。
 
-## MasterGo MCP 调用规则
-
-- 调用 MasterGo MCP 工具时，优先使用 `shortLink` 参数传入完整 URL（含 `shareId`）；`fileId`+`layerId` 参数对分享链接（带 `shareId` 的 URL）可能返回空数据，失败时优先排查链接是否含 `shareId` 并切换为 `shortLink`。详情见扩展包 §11。
-
 ## 自适应多 Agent 协作规则
 
 - 每个任务开始前先评估：任务复杂度、预计上下文规模、是否存在边界清晰的独立子任务、使用多 Agent 是否能明显提升质量/速度/上下文隔离。

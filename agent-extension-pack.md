@@ -188,3 +188,21 @@ grep -o 'https://mastergo.com/file/[0-9]\+[^" )]*' prd.md | sort -u
 ```
 
 提取后确认链接含有 `shareId` 参数，直接用完整的链接调 `shortLink`。
+
+### 11.4 getDesignSections 两段式工作流（重要：避免"只有概览"陷阱）
+
+> **实证（PIM 第7版，会话 f9693fa1）**：解决了 `shortLink` 空数据问题后，Agent 仅调用了 `getDesignSections` Mode 1（不传 `sectionIndex`），获取了 sections 的 `id/name/nodeCount/bbox`。随后标记为"已验证(概览)"并交付审查。用户指出后，尝试补调 Mode 2，但只完成了 M2（5 sections）的全量 DSL 抓取，其余 M3(114 sections)、M8(13)、M9(13)、M10(37) 等模块的详细 DSL 全部缺失。根因：Agent 不知道 `getDesignSections` 有两段式调用流程。
+
+`getDesignSections` 是一个**两段式工具**：
+
+| 模式 | 参数 | 返回内容 | 用途 |
+|------|------|---------|------|
+| Mode 1（概览） | 不传 `sectionIndex` | sections 列表：id/name/type/nodeCount + bbox(x/y/width/height) + rootMetadata + splitContainers | 了解页面有几分层、每个区域的名字和大小 |
+| Mode 2（详细） | 传 `sectionIndex=0..N-1` | 每个 section 的完整节点树：children 递归结构、样式 token（font/color/shadow/border）、文本内容、组件引用、交互定义 | 获取实际设计细节用于编码 |
+
+**硬规则：**
+1. **Mode 1 只是探路** — 拿到 section 总数和名称后，必须逐个调用 Mode 2
+2. **先全部 Mode 1 → 再全部 Mode 2** — 不要混着交错调
+3. **落盘时区分文件** — Mode 1 保存为 `sections-{页面}.json`，Mode 2 合并为 `dsl-full-{页面}.json`
+4. **大 section 数必须使用 Workflow 并行** — 单页 114 个 section 串行调会超时
+5. 完成 Mode 2 后，还要调 `getDesignSvgs` 和 `getDesignTexts` 补全 SVG 图标和长文本内容
