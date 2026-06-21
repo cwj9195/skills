@@ -17,6 +17,7 @@
 | §8  | session-bridge MCP（8.1–8.7） | 跨工具会话读取、检索历史对话、grep 检索法 |
 | §9  | rtk / shell 操作经验          | 写文件、管道污染、定位文件                |
 | §10 | 工具链路与平台认知            | 平台工具 vs agent 工具、敏感信息读取      |
+| §11 | MasterGo MCP 使用经验         | 分享链接参数选择、空数据排查、链接提取    |
 
 ## 0. 维护规则
 
@@ -157,3 +158,33 @@ cli-continues(1271⭐,Node,MIT) / casr(79,Rust) / ctxmv(32,Swift) / agent-migrat
   - 平台工具（webReader/web_search_prime，标 `Z.ai Built-in`）：中转平台(Z.ai/智谱)注入，**平台侧执行**，cc-switch 管不到，请求经腾讯云中转。
 - **机制**：模型/平台提供工具是普遍能力（类比 OpenAI web_search/code_interpreter、Gemini grounding、智谱 web_search_prime）——模型生成 tool_call → 平台拦截执行 → 结果注入模型上下文，对 agent 半透明。
 - **隐私偏好（重要）**：涉及公司敏感信息（代码/会话/密钥）的读取，只用本地 MCP（fetch/session-bridge），避开平台 webReader/web_search_prime（经中转）。
+
+## 11. MasterGo MCP 使用经验
+
+> 来源：2026-06-21 PIM 第7版需求拆分会话实证（会话 f9693fa1）。适用范围：所有需通过 MasterGo MCP 获取设计数据的场景。状态：有效。最后确认时间：2026-06-21。
+
+### 11.1 分享链接必须用 shortLink（核心教训）
+
+- MasterGo 设计文件通过**分享链接**（URL 含 `shareId=xxx`）访问时，`getDesignSections`/`getDsl`/`getMeta` 等工具用 `fileId`+`layerId` 参数返回空数据。原因是分享链接走分享授权路径，fileId+layerId 走内部认证路径，二者不互通。
+- 解决方案：直接传完整 URL 给 `shortLink` 参数，走分享链接验证路径。
+- 所有 MasterGo MCP 工具（`getDesignSections`、`getDsl`、`getMeta`、`getDesignSvgs`、`extractSvg`）均支持 `shortLink` 参数。
+
+### 11.2 MasterGo 空数据故障排查顺序
+
+| 步骤 | 操作 | 预期 |
+| --- | --- | --- |
+| 1 | 检查链接 URL 是否含 `shareId=xxx` | 有则用 `shortLink` 传完整 URL |
+| 2 | 确认 `page_id`/`layer_id` 从 PRD 正确提取 | 提取准确 |
+| 3 | 尝试 `fileId`+不同 `layerId` 组合 | 可能多页共享同一 fileId |
+| 4 | 尝试 `getDsl` fallback | 部分场景有数据 |
+| 5 | 尝试 `getMeta` 获取元信息 | 有元信息说明链接可达 |
+| 6 | 以上均失败则报告阻塞 | 输出失败原因+修复建议 |
+
+### 11.3 从 PRD 提取 MasterGo 链接的方法
+
+```bash
+# 提取所有 MasterGo 链接（含 shareId）
+grep -o 'https://mastergo.com/file/[0-9]\+[^" )]*' prd.md | sort -u
+```
+
+提取后确认链接含有 `shareId` 参数，直接用完整的链接调 `shortLink`。

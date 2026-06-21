@@ -29,7 +29,7 @@
     - 当前对话引用ID获取规则：优先调用 `session-bridge.current_session`；ClaudeCode 读 `CLAUDE_CODE_SESSION_ID`，Codex 读 MCP `_meta.x-codex-turn-metadata.session_id`。失败时用 `session-bridge.list_sessions` 按 cwd/时间/摘要指认；仍无法确认则写 `❌Unknown`，禁止编造。
     - 每轮结束报告的当前对话引用ID 必须实际调用 session-bridge.current_session 或读取 CLAUDE_CODE_SESSION_ID 获取，禁止未尝试即写 ❌Unknown
 - 改动 skills、MCP 时，只改 cc-switch 源信息,codex 和 claudecode 都是通过软链指向的cc-switch的。
-- 全程用中文说明结论、证据、风险和取舍；~~不要输出内部思考链。~~
+- 回复全程用中文，包括你的**思考链**(重要)
 
 ## 基础包规则
 
@@ -44,6 +44,10 @@
 - 涉及代码结构、符号定义、引用、调用链、数据流、影响面、设计分析时，优先使用 Codegraph MCP。
 - Codegraph 能回答的，不用 Bash 的 ls/find/grep/cat 重复检索。
 - 需要完整文件内容、运行时输出、命令结果，或 Codegraph 信息不足时，再用 bash 补证。
+
+## MasterGo MCP 调用规则
+
+- 调用 MasterGo MCP 工具时，优先使用 `shortLink` 参数传入完整 URL（含 `shareId`）；`fileId`+`layerId` 参数对分享链接（带 `shareId` 的 URL）可能返回空数据，失败时优先排查链接是否含 `shareId` 并切换为 `shortLink`。详情见扩展包 §11。
 
 ## 自适应多 Agent 协作规则
 
