@@ -1,132 +1,99 @@
 ---
 name: frontend-design-agent
-description: 'Use when Codex needs to turn PRD/specs, MasterGo layers, prototypes, existing code, or component-library evidence into frontend module splits, frontend API contracts, implementation-ready design docs, or code changes driven by implementation-tasks.md.'
+description: Use when Codex needs to turn PRD/specs, MasterGo layers, prototypes, existing code, or component-library evidence into frontend module splits, frontend design, implementation tasks, or code changes driven by those tasks.
 ---
 
-# Front Design Agent v2
+# Frontend Design Agent
 
-## 1. 定位
+## 定位
 
-使用本 skill 时，目标是产出 AI 能直接执行的前端实现输入，而不是泛化说明文档。
+把需求、原型、MasterGo、组件库和现有代码证据转成前端可执行输入。三阶段固定为：需求拆分、代码设计、代码落地。主 Agent 串联全局上下文和阶段门禁；多 Agent 只承担独立子任务，不拥有最终决策权。
 
-本 skill 采用 **Workflow-first, Agent-inside**：
+本文件是唯一规则源。除确定性脚本外，不再使用模板文件或说明文件。
 
-- 外层 workflow 固定三轮：`module-split -> module-design -> implement`。
-- 阶段输入、产物、禁止事项、停止条件以 [references/workflow.md](references/workflow.md) 为唯一执行规则源。
-- `SKILL.md` 只保留入口路由、reference 加载策略、工具顺序和不可违反摘要。
-- 模板文件只负责产物结构和文件内自检；不要把模板字段复制回 `SKILL.md`。
+## 开场纪律
 
-## 2. 模式选择
-
-收到请求后先判断模式，并在回复开头声明：
+使用本 skill 后，先声明五件事，再执行：
 
 ```text
-我将使用 {mode} mode。
-本轮会产出：{outputs}。
-本轮不会做：{non_goals}。
+我将使用 frontend-design-agent。
+当前阶段：需求拆分 / 代码设计 / 代码落地。
+本轮产物：...
+本轮不做：...
+多 Agent：启用 / 串行模拟，原因：...
+人工确认点：...
 ```
 
-| 模式 | 自动进入条件 | 本轮产出 | 本轮禁止 |
+声明后严格按当前阶段推进。阶段不清时，只问一句阶段选择，不先探索、不先写文件。
+
+## 阶段
+
+| 阶段 | 触发 | 输出 | 必须停止点 |
 | --- | --- | --- | --- |
-| `module-split` | 用户提供 PRD/UI/原型，且未指定模块目录或模块文件 | [module-index.md](module-index.md)、每个模块的 [module.md](module.md) | 不生成设计书、[api-contract.md](api-contract.md)、[code-reference.md](code-reference.md)、[implementation-tasks.md](implementation-tasks.md)；不写代码；不把未确认接口写成事实 |
-| `module-design` | 用户指定模块目录、模块文件，或明确说“针对 Mx 生成设计书” | [requirements-detail.md](requirements-detail.md)、[code-reference.md](code-reference.md)、根级 [api-contract.md](api-contract.md)、[frontend-design.md](frontend-design.md)、[implementation-tasks.md](implementation-tasks.md) | 不读取完整 PRD 作为主要输入；不处理无关模块；不跳过 Codegraph 代码模式提取 |
-| `implement` | 用户提供 [implementation-tasks.md](implementation-tasks.md) 或明确要求按任务写代码 | 按任务改代码、验证结果、改动文件、Regression Check、Defensive Code | 不生成设计书；不回读完整 PRD；不改无关模块 |
+| 需求拆分 | 用户提供 PRD、原型、截图或 MasterGo，并要求拆模块 | `sources/PRD.md`、`module-index.md`、每模块 `module.md`、`_gate.json`、可选 `sources/mastergo/*.dsl.json` | 完成后停在人工审查，不自动进入代码设计 |
+| 代码设计 | 用户指定单个模块目录、`module.md`，或要求针对模块出设计 | 模块设计文档，包含需求细化、代码证据、接口契约、前端设计、实现任务 | 完成后停在人工确认，不自动进入代码落地 |
+| 代码落地 | 用户提供实现任务或明确要求按任务写代码 | 代码改动、验证结果、回归检查、防御代码 | 遇到接口、权限、路由、状态、字段冲突时停止确认 |
 
-无法判断模式时，只问一句：
+无法判断阶段时，只问一句：`请选择当前阶段：需求拆分、代码设计、代码落地。`
 
-```text
-请选择当前阶段：module-split（拆模块）、module-design（单模块设计）、implement（按任务写代码）。
-```
+## 主 Agent 与多 Agent
 
-## 3. 必读 reference
+- 主 Agent：维护目标、阶段边界、共享证据、人工确认点、冲突处理和最终验收。
+- 提取 Agent：按模块读取 PRD 切片，生成模块事实内容。
+- 复核 Agent：检查证据、中文语义、MasterGo 状态、门禁结论。
+- 代码证据 Agent：用 Codegraph 扫描现有代码、组件、接口、路由和影响面。
+- 实现 Agent：按已确认任务修改代码。
+- 验证 Agent：运行测试、类型检查、构建或回归检查，并汇总失败原因。
 
-按模式读取 reference，不要一次性加载全部。所有细则以 reference 为准。
+启用规则：
 
-| 模式 | 必读 reference | 按需 reference |
-| --- | --- | --- |
-| `module-split` | [references/workflow.md](references/workflow.md)、[references/module-index-template.md](references/module-index-template.md)、[references/module-template.md](references/module-template.md) | legacy 四文件输入只读兼容，不作为新产物模板 |
-| `module-design` | [references/workflow.md](references/workflow.md)、[references/requirements-template.md](references/requirements-template.md)、[references/code-reference-template.md](references/code-reference-template.md)、[references/api-contract-template.md](references/api-contract-template.md)、[references/frontend-design-template.md](references/frontend-design-template.md)、[references/claude-code-task-template.md](references/claude-code-task-template.md) | 任务涉及 YApi/OpenAPI 同步时读 [references/yapi-sync.md](references/yapi-sync.md) |
-| `implement` | [references/workflow.md](references/workflow.md)、[references/claude-code-task-template.md](references/claude-code-task-template.md) | 任务涉及接口时读 [references/api-contract-template.md](references/api-contract-template.md)；需要追溯方案时读对应设计产物 |
+- 需求拆分目标超过 5 个模块时，必须拆成提取与复核分工；没有子 Agent 工具时由主 Agent 串行模拟，并在输出中说明。
+- 代码设计必须有代码证据 Agent，或由主 Agent 使用 Codegraph 产出等价代码证据。
+- 代码落地必须有验证 Agent，或由主 Agent 完成等价验证闭环。
+- 子 Agent 输入必须包含目标、范围、证据来源、禁止事项和输出格式。
+- 子 Agent 输出只作为候选结论；主 Agent 必须复核证据、解决冲突、统一写入最终产物。
 
-多模块强制路由：
+## 中文语义与证据
 
-- `module-split` / `module-design` 且目标模块数 >= 5，或单次产出 >= 10 个模块级文件时，必须读取 [workflows/module-split-parallel.md](workflows/module-split-parallel.md)。
-- 该 playbook 负责 Workflow 并行的 `extract / verify / aggregate` 编排；有多 Agent 工具时用 sub-agent 承载，无法使用时按同阶段串行模拟并记录 Fallback。
+- 产物不使用旧英文条目标签；使用中文语义：需求、字段、规则、权限、流程、状态、接口线索、审查记录、门禁。
+- 状态使用中文：通过、失败、阻塞、已验证、未验证、降级证据。
+- 条目编号使用中文前缀：`需求-M2-001`、`字段-M2-001`、`流程-M2-001`、`接口线索-M2-001`。
+- 文件名 `module.md`、`_gate.json`、`SKILL.md` 以及专有名词 `MasterGo`、`DSL`、`PRD`、`YApi`、`OpenAPI` 保留。
+- 所有结论必须有证据；证据包含来源登记、快照行号、原文摘要。证据不足写阻塞或待确认，不写成事实。
 
-## 4. 标准产物
+## 需求拆分规则
 
-`module-split` 只生成单文件模块产物：
+- 先复制 PRD 原文到 `sources/PRD.md`，保持原文行号，不插说明头。
+- `module-index.md` 只做索引：来源登记、模块清单、状态、跨模块问题、下一步建议。
+- 每模块只生成 `module.md` 和 `_gate.json`；历史四文件只读兼容，不再生成。
+- `module.md` 覆盖模块范围、需求与规则、字段与权限、界面证据、原型与流程、接口线索、审查记录、门禁摘要。
+- 有 MasterGo 链接时必须尝试获取 DSL；成功落盘，失败写未验证、降级证据或阻塞。写“已验证”时必须存在真实落盘文件或明确的可追溯工具结果。
+- 需求必须是可验证行为陈述，不能直接搬运 PRD 子标题。
+- 字段只能登记真实业务字段，不能混入表头、分隔符或序号。
+- 接口线索必须体现模块特有业务，不能跨模块复制泛化句。
+- 审查记录必须写模块独有问题，不能套模板。
+- `_gate.json` 使用中文 key 和中文状态；同一生成者不得给自己打通过。
+- 完成后运行 `references/validate-module-split.sh <输出目录>`。
 
-```text
-sources/
-  PRD.md
-  source-map.md（可选）
-module-index.md
-M{N}-{模块名}/
-  module.md
-  sources/
-    mastergo/
-      UI-M{N}-xxx.dsl.json（MasterGo DSL 成功获取后必落盘）
-```
+## 代码设计规则
 
-历史四文件模块材料只作为 legacy input 兼容读取；新运行的 `module-split` 不生成、不声明、不推荐拆分模块文件。
+- 输入以单模块 `module.md` 为主，不回读完整 PRD 作为主要事实源。
+- 必须用 Codegraph 或只读命令获取代码证据，覆盖路由、页面、组件、状态、请求层、权限和相邻模块模式。
+- 输出可合并为一个模块设计文档，至少包含：需求细化、代码证据、接口契约、前端设计、实现任务。
+- 接口契约只记录已确认和前端推导；未确认 method/path、字段、枚举、权限写待确认。
+- 人类可读接口编号使用 `接口-M2-001` 这类中文语义。若需要导出给 YApi/OpenAPI，可在接口契约中额外提供机器兼容别名 `API-M2-001`，仅供 `scripts/contract-to-swagger.mjs` 解析；正文展示仍以中文编号为准。
+- 涉及 YApi/OpenAPI 同步时，可使用 `scripts/contract-to-swagger.mjs` 辅助转换，但 YApi 仍是团队接口事实源，前端文档只记录对齐差异。若没有机器兼容别名，不运行该脚本，改为输出待确认。
 
-`module-design` 默认生成或更新：
+## 代码落地规则
 
-```text
-requirements-detail.md -> code-reference.md -> api-contract.md -> frontend-design.md -> implementation-tasks.md
-```
+- 只按已确认实现任务修改代码，不用“实现某模块”替代任务。
+- 优先复用公司组件库、业务公共组件和现有请求/路由/状态管理模式。
+- 改动前做影响面分析；高风险链路按项目规则补最小行为测试。
+- 完成后必须输出改动文件、验证命令和结果、回归检查、防御代码。
+- 验证失败时先修复；无法修复则输出阻塞原因和证据。
 
-事实边界：
+## 质量门禁
 
-- [sources/PRD.md](sources/PRD.md)：PRD 原文快照，只用于 Evidence 溯源，禁止作为二次编辑事实源。
-- [module-index.md](module-index.md)：Manifest 单一入口源，只维护模块身份、路径、状态和索引。
-- [module.md](module.md)：module-split 的模块事实源，按章节合并需求、字段、权限、UI Evidence、Prototype/Flow、API Hints、Review Notes 和 Gate。
-- [sources/mastergo/*.dsl.json](sources/mastergo/*.dsl.json)：MasterGo / 组件规格原始证据，只落盘引用，不塞入 [module.md](module.md) 全文。
-- [api-contract.md](api-contract.md)：前端工作流内的接口契约唯一事实源；团队层面接口定义单一源仍是 YApi。
-- [implementation-tasks.md](implementation-tasks.md)：实现 Agent 唯一执行入口。
-
-命名策略：
-
-- 输出语言、章节标题、文件命名优先跟随用户明确要求；未指定时跟随输入材料和项目现有约定。
-- 新生成产物默认使用英文 canonical filenames；legacy 中文文件名只读兼容，不主动迁移。
-- 稳定 ID 不本地化：`M{N}`、`API-Mx-xxx`、`T-Mx-xx` 必须保持机器可读。
-
-## 5. 工具顺序
-
-| 场景 | 首选工具 | 降级规则 |
-| --- | --- | --- |
-| 代码结构、符号、引用、调用链、影响面 | Codegraph MCP | 未初始化时提示 `codegraph init`，再用只读 RTK 命令降级，并标记 Fallback |
-| PRD 链接、原型链接、组件库文档 | Chrome DevTools MCP | 用户提供导出文件、截图或 Markdown |
-| MasterGo 图层链接 | `mcp__getComponentGenerator` | `mcp__getDsl` / `mcp__getMeta` / `mcp__getD2c`（仅 D2C contentId）/ `mcp__getComponentLink`（仅组件文档链接）/ 用户导出 DSL 或截图 |
-| Shell 命令 | RTK | 所有 shell 命令加 `rtk` 前缀 |
-
-MasterGo 详细采集、落盘和降级规则见 [references/workflow.md](references/workflow.md)。
-
-## 6. 不可违反摘要
-
-- 不新增第四种模式。
-- `module-split` 完成后停在人工审查/补图阶段，不自动进入 `module-design`。
-- `module-split` 必须生成 [sources/PRD.md](sources/PRD.md) 来源快照，并在 [module-index.md](module-index.md) 维护 Source Registry。
-- `module-split` 每模块只生成 1 个 [module.md](module.md)。历史四文件模块材料只读兼容，不作为新产物、不作为推荐输出。
-- 所有设计结论必须有 Evidence；条目级 Evidence 必须同时包含 Source Registry 链接、快照行号链接和原文摘要。
-- 引用型稳定 ID 必须可跳转；所有文件路径、代码位置、组件文档、sources URL、快照行号必须使用 Markdown 链接。
-- MasterGo 链接必须解析并按 [references/workflow.md](references/workflow.md) 的工具矩阵尝试落盘；有 MasterGo 链接但当前环境没有任何 MasterGo MCP 工具时，必须在生成模块前进入 repair/Blocked，向用户说明无法满足“拆分阶段拿到 UI 信息”，不得静默产出 Split 完成态。
-- 只有 canonical DSL JSON 可解析并映射到 UI Source 时才能标记 Verified；PRD 图片、截图和口头描述只能是 Fallback Evidence。
-- `module-design` 必须生成或更新根级 [api-contract.md](api-contract.md)，并严格采用 [references/api-contract-template.md](references/api-contract-template.md)。
-- 后端 OpenAPI/YApi/Markdown/接口表是 Backend Contract Evidence，不是 Frontend-Proposed 契约的前置条件；导入后必须做差异对齐。
-- `frontend-design.md` 写完后必须执行 `/analyze` 自审；`implementation-tasks.md` 写完后必须执行 `/verify`。
-- `implement` 只能按 [implementation-tasks.md](implementation-tasks.md) 的任务 ID 执行，不得用“实现某模块”替代任务 ID。
-- 组件选择顺序：公司组件库 > 业务公共组件 > 当前模块内新组件。
-- 默认不生成 `facts.md`、`tasks.md`、`ci-gate.md`、`agent-prompts.md`、`fact-set.yaml`；只有严格审计、真实 CI 修复、多 Agent 编排或脚本消费等明确场景才额外生成。
-
-## 7. 实现模式输出
-
-`implement` 完成后必须输出：
-
-- 改动文件。
-- 验证命令和结果。
-- `Regression Check`：列出检查过的点击、回调、状态写入或请求链路。
-- `Defensive Code`：列出新增的防御判断；没有则写“无”。
-
-如果接口字段、path、状态、权限、路由或任务范围冲突，停止并输出阻塞项，不擅自扩大范围。
+- 需求拆分：中文语义、条目证据、字段无污染、接口线索不雷同、审查记录不模板化、MasterGo 状态与落盘文件一致。
+- 代码设计：代码证据充分，接口待确认清晰，实现任务可执行，人工确认后才能进入代码落地。
+- 代码落地：不改无关业务代码，不弱化测试资产，验证结果可复现。
